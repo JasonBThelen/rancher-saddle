@@ -6,11 +6,12 @@ namespace RancherSaddle.Api.Services
 {
     public interface IRancherClient
     {
-        Task<<TT?> GetAsync<<TT>(string endpoint);
-        Task<<TTResponse?> PostAsync<<TTRequest, TResponse>(string endpoint, TRequest data);
-        Task<<boolbool> DeleteAsync(string endpoint);
-        Task<<stringstring> GetClusterHealth();
-        Task<<ListList<<ModelsModels.PodPodDto>> GetPodsAsync(string clusterId);
+        Task<T?> GetAsync<T>(string endpoint);
+        Task<TResponse?> PostAsync<TRequest, TResponse>(string endpoint, TRequest data);
+        Task<bool> DeleteAsync(string endpoint);
+        Task<string> GetClusterHealth();
+        Task<List<Models.PodPodDto>> GetPodsAsync(string clusterId);
+        Task<string> GetPodLogsAsync(string clusterId, string podId, int tailLines);
     }
 
     public class RancherClient : IRancherClient
@@ -83,10 +84,17 @@ namespace RancherSaddle.Api.Services
             }
         }
 
-        public async Task<<ListList<<ModelsModels.PodPodDto>> GetPodsAsync(string clusterId)
+        public async Task<List<Models.PodPodDto>> GetPodsAsync(string clusterId)
         {
-            var pods = await GetAsync<<ListList<<ModelsModels.PodPodDto>>($"v3/clusters/{clusterId}/pods");
-            return pods ?? new List<<ModelsModels.PodPodDto>();
+            var pods = await GetAsync<List<Models.PodPodDto>>($"v3/clusters/{clusterId}/pods");
+            return pods ?? new List<Models.PodPodDto>();
+        }
+
+        public async Task<string> GetPodLogsAsync(string clusterId, string podId, int tailLines)
+        {
+            var endpoint = $"v3/clusters/{clusterId}/pods/{podId}/logs?tail={tailLines}";
+            var logContent = await GetAsync<string>(endpoint);
+            return logContent ?? "No logs found.";
         }
 
         private async Task<T?> HandleResponseAsync<T>(HttpResponseMessage response)
