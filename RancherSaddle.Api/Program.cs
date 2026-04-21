@@ -75,17 +75,17 @@ app.MapGet("/api/token", (HttpContext context, RancherSaddle.Api.Services.IToken
 
     app.MapGet("/api/clusters", async (RancherSaddle.Api.Services.IRancherClient rancherClient) =>
     {
-        var clusters = await rancherClient.GetAsync<<ListList<<RRancherSaddle.Api.Models.RancherCluster>>("v3/clusters");
-        if (clusters == null) return Results.Ok(new List<<RRancherSaddle.Api.Models.ClusterStatusDto>());
+        var clusters = await rancherClient.GetAsync<List<RancherSaddle.Api.Models.RancherCluster>>("v3/clusters");
+        if (clusters == null) return Results.Ok(new List<RancherSaddle.Api.Models.ClusterStatusDto>());
 
-        var statusList = new List<<RRancherSaddle.Api.Models.ClusterStatusDto>();
+        var statusList = new List<RancherSaddle.Api.Models.ClusterStatusDto>();
         foreach (var cluster in clusters)
         {
             var pods = await rancherClient.GetPodsAsync(cluster.Id);
             int running = pods.Count(p => p.Status == "Running");
             int failed = pods.Count(p => p.Status == "Failed");
             
-            string health = (failed == 0) ? "Healthy" : (failed <<  3 ? "Warning" : "Critical");
+            string health = (failed == 0) ? "Healthy" : (failed < 3 ? "Warning" : "Critical");
             
             statusList.Add(new RancherSaddle.Api.Models.ClusterStatusDto(
                 cluster.Id, 
@@ -99,6 +99,23 @@ app.MapGet("/api/token", (HttpContext context, RancherSaddle.Api.Services.IToken
     })
     .WithName("GetClusters")
     .WithOpenApi();
+
+    app.MapGet("/api/clusters/{clusterId}/pods", async (string clusterId, RancherSaddle.Api.Services.IRancherClient rancherClient) =>
+    {
+        var pods = await rancherClient.GetPodsAsync(clusterId);
+        return Results.Ok(pods);
+    })
+    .WithName("GetClusterPods")
+    .WithOpenApi();
+
+    app.MapDelete("/api/clusters/{clusterId}/pods/{podId}/restart", async (string clusterId, string podId, RancherSaddle.Api.Services.IRancherClient rancherClient) =>
+    {
+        var success = await rancherClient.DeleteAsync($"v3/clusters/{clusterId}/pods/{podId}");
+        return success ? Results.Ok(new { message = "Pod restart triggered successfully" }) : Results.BadRequest(new { message = "Failed to restart pod" });
+    })
+    .WithName("RestartPod")
+    .WithOpenApi();
+
 
 app.Run();
 
