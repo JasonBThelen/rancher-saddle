@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rancher-saddle
+  labels:
+    app: rancher-saddle
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rancher-saddle
+  template:
+    metadata:
+      labels:
+        app: rancher-saddle
+    spec:
+      containers:
+      - name: rancher-saddle
+        image: jasonbthelen/rancher-saddle:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: UseMockClient
+          value: "false"
+        - name: RancherApiBaseUrl
+          value: "https://rancher.internal.cluster"
+        resources:
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
