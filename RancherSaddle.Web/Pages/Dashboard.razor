@@ -1,0 +1,234 @@
+@page "/"
+@using RancherSaddle.Api.Models
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<div class="dashboard-container">
+    <div class="header-actions">
+        <h2>Cluster Health</h2>
+        <button class="btn-refresh" @onclick="RefreshHealth">
+            <span class="bi bi-arrow-clockwise"></span> Refresh
+        </button>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Fetching cluster status...</p>
+        </div>
+    }
+    else if (clusters == null || !clusters.Any())
+    {
+        <div class="empty-state">
+            <p>No clusters found. Check your API token in Settings.</p>
+        </div>
+    }
+    else
+    {
+        <div class="cluster-list">
+            @foreach (var cluster in clusters)
+            {
+                <div class="cluster-card" @onclick="() => NavigateToPods(cluster.Id)">
+                    <div class="card-main">
+                        <div class="status-indicator" style="background-color: @GetStatusColor(cluster.Status)"></div>
+                        <div class="cluster-info">
+                            <span class="cluster-name">@cluster.Name</span>
+                            <span class="cluster-status">@cluster.Status</span>
+                        </div>
+                    }
+                    <div class="card-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Running</span>
+                            <span class="stat-value">@cluster.RunningPods</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Failed</span>
+                            <span class="stat-value @(cluster.FailedPods > 0 ? "text-danger" : "")">@cluster.FailedPods</span>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<ClusterStatusDto> clusters = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshHealth();
+    }
+
+    private async Task RefreshHealth()
+    {
+        isLoading = true;
+        try
+        {
+            clusters = await Http.GetFromJsonAsync<List<ClusterStatusDto>>("api/clusters") ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching health: {ex.Message}");
+            clusters = new();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private string GetStatusColor(string status)
+    {
+        return status switch
+        {
+            "Healthy" => "#2ecc71",
+            "Warning" => "#f1c40f",
+            "Critical" => "#e74c3c",
+            _ => "#888"
+        };
+    }
+
+    private void NavigateToPods(string clusterId)
+    {
+        Navigation.NavigateTo($"/pods?clusterId={clusterId}");
+    }
+}
+
+<style>
+    .dashboard-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .header-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .header-actions h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        color: #fff;
+    }
+
+    .btn-refresh {
+        background: #333;
+        color: #fff;
+        border: 1px solid #444;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-refresh:active {
+        background: #444;
+    }
+
+    .cluster-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .cluster-card {
+        background: #1f1f1f;
+        border-radius: 12px;
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        transition: transform 0.1s ease, background-color 0.2s ease;
+        border: 1px solid #333;
+    }
+
+    .cluster-card:active {
+        transform: scale(0.98);
+        background-color: #2a2a2a;
+    }
+
+    .card-main {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        box-shadow: 0 0 8px rgba(0,0,0,0.5);
+    }
+
+    .cluster-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .cluster-name {
+        font-weight: bold;
+        font-size: 1.1rem;
+        color: #fff;
+    }
+
+    .cluster-status {
+        font-size: 0.85rem;
+        color: #aaa;
+    }
+
+    .card-stats {
+        display: flex;
+        gap: 1rem;
+        text-align: right;
+    }
+
+    .stat-item {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .stat-label {
+        font-size: 0.7rem;
+        color: #666;
+        text-transform: uppercase;
+    }
+
+    .stat-value {
+        font-weight: bold;
+        font-size: 1rem;
+        color: #eee;
+    }
+
+    .text-danger {
+        color: #e74c3c;
+    }
+
+    .loading-state, .empty-state {
+        text-align: center;
+        padding: 3rem 0;
+        color: #888;
+    }
+
+    .spinner {
+        width: 30px;
+        height: 30px;
+        border: 3px solid #333;
+        border-top: 3px solid #4dabff;
+        border-radius: 50%;
+        margin: 0 auto 1rem auto;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
