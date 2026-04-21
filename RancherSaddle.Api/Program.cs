@@ -52,9 +52,9 @@ app.MapGet(\"/api/token\", (HttpContext context, RancherSaddle.Api.Services.ITok
     if (!string.IsNullOrEmpty(token))
     {
         tokenService.SetToken(token);
-        return Results.Ok(new { status = \"Token updated\", token = token });
+        return Results.Ok(new { status = "Token updated" });
     }
-    return Results.Ok(new { status = \"Current token\", token = tokenService.GetToken() });
+    return Results.Ok(new { status = "Request token via header" });
 })
 .WithName(\"GetToken\")
 .WithOpenApi();
