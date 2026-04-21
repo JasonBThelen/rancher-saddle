@@ -1,0 +1,56 @@
+@page "/settings"
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<h3 class="mb-3">Settings</h3>
+
+<div class="mb-3">
+    <label for="rancherToken" class="form-label">Rancher API Token</label>
+    <input type="text" id="rancherToken" class="form-control" @bind="token" placeholder="Enter your Rancher token" />
+</div>
+
+<button class="btn btn-primary" @onclick="SaveToken">Save Token</button>
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <div class="mt-3 alert alert-info">@message</div>
+}
+
+@code {
+    private string token = "";
+    private string message = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var savedToken = await JS.InvokeAsync<string>("localStorage.getItem", "rancher_token");
+        if (!string.IsNullOrEmpty(savedToken))
+        {
+            token = savedToken;
+        }
+    }
+
+    private async Task SaveToken()
+    {
+        await JS.InvokeVoidAsync("localStorage.setItem", "rancher_token", token);
+        
+        try 
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, "api/token");
+            request.Headers.Add("X-Rancher-Token", token);
+            var response = await Http.SendAsync(request);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                message = "Token saved and verified with API!";
+            }
+            else
+            {
+                message = "Token saved locally, but API verification failed.";
+            }
+        }
+        catch (Exception ex)
+        {
+            message = $"Error verifying token: {ex.Message}";
+        }
+    }
+}
