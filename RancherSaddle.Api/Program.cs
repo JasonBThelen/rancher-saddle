@@ -73,19 +73,19 @@ app.MapGet("/api/token", (HttpContext context, RancherSaddle.Api.Services.IToken
 .WithName("GetToken")
 .WithOpenApi();
 
-    app.MapGet(\"/api/clusters\", async (RancherSaddle.Api.Services.IRancherClient rancherClient) =>
+    app.MapGet("/api/clusters", async (RancherSaddle.Api.Services.IRancherClient rancherClient) =>
     {
-        var clusters = await rancherClient.GetAsync<<ListList<<RRancherSaddle.Api.Models.RancherCluster>>(\"v3/clusters\");
+        var clusters = await rancherClient.GetAsync<<ListList<<RRancherSaddle.Api.Models.RancherCluster>>("v3/clusters");
         if (clusters == null) return Results.Ok(new List<<RRancherSaddle.Api.Models.ClusterStatusDto>());
 
         var statusList = new List<<RRancherSaddle.Api.Models.ClusterStatusDto>();
         foreach (var cluster in clusters)
         {
             var pods = await rancherClient.GetPodsAsync(cluster.Id);
-            int running = pods.Count(p => p.Status == \"Running\");
-            int failed = pods.Count(p => p.Status == \"Failed\");
+            int running = pods.Count(p => p.Status == "Running");
+            int failed = pods.Count(p => p.Status == "Failed");
             
-            string health = (failed == 0) ? \"Healthy\" : (failed <<  3 ? \"Warning\" : \"Critical\");
+            string health = (failed == 0) ? "Healthy" : (failed <<  3 ? "Warning" : "Critical");
             
             statusList.Add(new RancherSaddle.Api.Models.ClusterStatusDto(
                 cluster.Id, 
@@ -97,7 +97,7 @@ app.MapGet("/api/token", (HttpContext context, RancherSaddle.Api.Services.IToken
         }
         return Results.Ok(statusList);
     })
-    .WithName(\"GetClusters\")
+    .WithName("GetClusters")
     .WithOpenApi();
 
 app.Run();

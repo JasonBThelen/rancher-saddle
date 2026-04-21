@@ -11,20 +11,23 @@ namespace RancherSaddle.Api.Services
             _logger = logger;
         }
 
-        public Task<T?> GetAsync<T>(string endpoint)
+    public Task<<TT?> GetAsync<<TT>(string endpoint)
+    {
+        _logger.LogInformation("MockRancherClient: GET {Endpoint}", endpoint);
+        
+        if (endpoint.Contains("v3/clusters"))
         {
-            _logger.LogInformation("MockRancherClient: GET {Endpoint}", endpoint);
-            
-            // Minimal mock mapping
-            if (endpoint.Contains("v3/clusters"))
+            var clusters = new List<<ModelsModels.RancherCluster>
             {
-                var mockResponse = new { status = "active", name = "mock-cluster" };
-                var json = JsonSerializer.Serialize(mockResponse);
-                return Task.FromResult(JsonSerializer.Deserialize<T>(json));
-            }
-
-            return Task.FromResult(default(T));
+                new Models.RancherCluster("c-healthy", "Production-Cluster", "active"),
+                new Models.RancherCluster("c-failed", "Staging-Cluster", "active")
+            };
+            var json = JsonSerializer.Serialize(clusters);
+            return Task.FromResult(JsonSerializer.Deserialize<<TT>(json));
         }
+
+        return Task.FromResult(default(T));
+    }
 
         public Task<TResponse?> PostAsync<TRequest, TResponse>(string endpoint, TRequest data)
         {

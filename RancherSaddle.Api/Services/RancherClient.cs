@@ -6,10 +6,11 @@ namespace RancherSaddle.Api.Services
 {
     public interface IRancherClient
     {
-        Task<T?> GetAsync<T>(string endpoint);
-        Task<TResponse?> PostAsync<TRequest, TResponse>(string endpoint, TRequest data);
-        Task<bool> DeleteAsync(string endpoint);
-        Task<string> GetClusterHealth();
+        Task<<TT?> GetAsync<<TT>(string endpoint);
+        Task<<TTResponse?> PostAsync<<TTRequest, TResponse>(string endpoint, TRequest data);
+        Task<<boolbool> DeleteAsync(string endpoint);
+        Task<<stringstring> GetClusterHealth();
+        Task<<ListList<<ModelsModels.PodPodDto>> GetPodsAsync(string clusterId);
     }
 
     public class RancherClient : IRancherClient
@@ -82,11 +83,10 @@ namespace RancherSaddle.Api.Services
             }
         }
 
-        public async Task<string> GetClusterHealth()
+        public async Task<<ListList<<ModelsModels.PodPodDto>> GetPodsAsync(string clusterId)
         {
-            // This is a stub for the verification endpoint
-            var result = await GetAsync<JsonElement>("v3/clusters"); 
-            return result != null ? "Healthy (Mock/Real)" : "Unhealthy";
+            var pods = await GetAsync<<ListList<<ModelsModels.PodPodDto>>($"v3/clusters/{clusterId}/pods");
+            return pods ?? new List<<ModelsModels.PodPodDto>();
         }
 
         private async Task<T?> HandleResponseAsync<T>(HttpResponseMessage response)
