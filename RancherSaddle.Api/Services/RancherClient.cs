@@ -34,7 +34,6 @@ namespace RancherSaddle.Api.Services
             {
                 throw new UnauthorizedAccessException("Rancher API token is missing.");
             }
-
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
 
@@ -95,6 +94,12 @@ namespace RancherSaddle.Api.Services
             var endpoint = $"v3/clusters/{clusterId}/pods/{podId}/logs?tail={tailLines}";
             var logContent = await GetAsync<string>(endpoint);
             return logContent ?? "No logs found.";
+        }
+
+        public async Task<string> GetClusterHealth()
+        {
+            var result = await GetAsync<JsonElement>("v3/clusters"); 
+            return result != null ? "Healthy (Real)" : "Unhealthy";
         }
 
         private async Task<T?> HandleResponseAsync<T>(HttpResponseMessage response)
