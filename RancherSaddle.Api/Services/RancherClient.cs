@@ -99,7 +99,7 @@ namespace RancherSaddle.Api.Services
         public async Task<string> GetClusterHealth()
         {
             var result = await GetAsync<JsonElement>("v3/clusters"); 
-            return result != null && result.ValueKind != JsonValueKind.Null ? "Healthy (Real)" : "Unhealthy";
+            return result.ValueKind != JsonValueKind.Undefined && result.ValueKind != JsonValueKind.Null ? "Healthy (Real)" : "Unhealthy";
         }
 
         private async Task<T?> HandleResponseAsync<T>(HttpResponseMessage response)

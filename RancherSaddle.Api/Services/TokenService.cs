@@ -1,4 +1,4 @@
-using RancherSaddle.Api.Models;
+using RancherSaddle.Shared.Models;
 
 namespace RancherSaddle.Api.Services
 {

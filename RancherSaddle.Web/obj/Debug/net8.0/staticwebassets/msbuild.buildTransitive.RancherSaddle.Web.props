@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="../buildMultiTargeting/RancherSaddle.Web.props" />
-</Project>

@@ -75,10 +75,10 @@ app.MapGet("/api/token", (HttpContext context, RancherSaddle.Api.Services.IToken
 
 app.MapGet("/api/clusters", async (RancherSaddle.Api.Services.IRancherClient rancherClient) =>
 {
-    var clusters = await rancherClient.GetAsync<List<RancherSaddle.Api.Models.RancherCluster>>("v3/clusters");
-    if (clusters == null) return Results.Ok(new List<RancherSaddle.Api.Models.ClusterStatusDto>());
+    var clusters = await rancherClient.GetAsync<List<RancherSaddle.Shared.Models.RancherCluster>>("v3/clusters");
+    if (clusters == null) return Results.Ok(new List<RancherSaddle.Shared.Models.ClusterStatusDto>());
 
-    var statusList = new List<RancherSaddle.Api.Models.ClusterStatusDto>();
+    var statusList = new List<RancherSaddle.Shared.Models.ClusterStatusDto>();
     foreach (var cluster in clusters)
     {
         var pods = await rancherClient.GetPodsAsync(cluster.Id);
@@ -87,7 +87,7 @@ app.MapGet("/api/clusters", async (RancherSaddle.Api.Services.IRancherClient ran
         
         string health = (failed == 0) ? "Healthy" : (failed < 3 ? "Warning" : "Critical");
         
-        statusList.Add(new RancherSaddle.Api.Models.ClusterStatusDto(
+        statusList.Add(new RancherSaddle.Shared.Models.ClusterStatusDto(
             cluster.Id, 
             cluster.Name, 
             health, 

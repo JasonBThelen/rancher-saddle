@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\RancherSaddle.Api\RancherSaddle.Api.csproj" />
+    <ProjectReference Include="..\RancherSaddle.Shared\RancherSaddle.Shared.csproj" />
   </ItemGroup>
 
 </Project>
