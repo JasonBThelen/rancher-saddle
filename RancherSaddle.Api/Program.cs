@@ -116,7 +116,7 @@ app.MapDelete("/api/clusters/{clusterId}/pods/{podId}/restart", async (string cl
 .WithName("RestartPod")
 .WithOpenApi();
 
-app.MapGet("/api/clusters/{clusterId}/pods/{podId}/logs", async (string clusterId, string podId, int tail = 100, RancherSaddle.Api.Services.IRancherClient rancherClient) =>
+app.MapGet("/api/clusters/{clusterId}/pods/{podId}/logs", async (string clusterId, string podId, RancherSaddle.Api.Services.IRancherClient rancherClient, int tail = 100) =>
 {
     var logs = await rancherClient.GetPodLogsAsync(clusterId, podId, tail);
     return Results.Text(logs);
