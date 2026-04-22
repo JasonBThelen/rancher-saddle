@@ -1,3 +1,6 @@
+using RancherSaddle.Shared.Models;
+using RancherSaddle.Api.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add CORS policy
@@ -5,22 +8,22 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("WebPolicy", policy =>
     {
-        policy.WithOrigins("http://localhost:5000", "https://localhost:5001", "http://localhost:3000", "https://localhost:3000")
+        policy.WithOrigins("http://localhost:5000", "https://localhost:5001", "http://localhost:3000")
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
 });
 
-builder.Services.AddSingleton<RancherSaddle.Api.Services.ITokenService, RancherSaddle.Api.Services.TokenService>();
+builder.Services.AddSingleton<ITokenService, TokenService>();
 
 var useMockClient = builder.Configuration.GetValue<bool>("UseMockClient");
 if (useMockClient)
 {
-    builder.Services.AddSingleton<RancherSaddle.Api.Services.IRancherClient, RancherSaddle.Api.Services.MockRancherClient>();
+    builder.Services.AddSingleton<IRancherClient, MockRancherClient>();
 }
 else
 {
-    builder.Services.AddHttpClient<RancherSaddle.Api.Services.IRancherClient, RancherSaddle.Api.Services.RancherClient>(client => 
+    builder.Services.AddHttpClient<IRancherClient, RancherClient>(client => 
     {
         client.BaseAddress = new Uri(builder.Configuration["RancherApiBaseUrl"] ?? "https://rancher.mycompany.com");
     });
@@ -60,7 +63,7 @@ app.MapGet("/weatherforecast", () =>
 .WithName("GetWeatherForecast")
 .WithOpenApi();
 
-app.MapGet("/api/token", (HttpContext context, RancherSaddle.Api.Services.ITokenService tokenService) =>
+app.MapGet("/api/token", (HttpContext context, ITokenService tokenService) =>
 {
     var token = context.Request.Headers["X-Rancher-Token"].ToString();
     if (!string.IsNullOrEmpty(token))
@@ -73,12 +76,12 @@ app.MapGet("/api/token", (HttpContext context, RancherSaddle.Api.Services.IToken
 .WithName("GetToken")
 .WithOpenApi();
 
-app.MapGet("/api/clusters", async (RancherSaddle.Api.Services.IRancherClient rancherClient) =>
+app.MapGet("/api/clusters", async (IRancherClient rancherClient) =>
 {
-    var clusters = await rancherClient.GetAsync<List<RancherSaddle.Shared.Models.RancherCluster>>("v3/clusters");
-    if (clusters == null) return Results.Ok(new List<RancherSaddle.Shared.Models.ClusterStatusDto>());
+    var clusters = await rancherClient.GetAsync<List<RancherCluster>>("v3/clusters");
+    if (clusters == null) return Results.Ok(new List<ClusterStatusDto>());
 
-    var statusList = new List<RancherSaddle.Shared.Models.ClusterStatusDto>();
+    var statusList = new List<ClusterStatusDto>();
     foreach (var cluster in clusters)
     {
         var pods = await rancherClient.GetPodsAsync(cluster.Id);
@@ -87,7 +90,7 @@ app.MapGet("/api/clusters", async (RancherSaddle.Api.Services.IRancherClient ran
         
         string health = (failed == 0) ? "Healthy" : (failed < 3 ? "Warning" : "Critical");
         
-        statusList.Add(new RancherSaddle.Shared.Models.ClusterStatusDto(
+        statusList.Add(new ClusterStatusDto(
             cluster.Id, 
             cluster.Name, 
             health, 
@@ -100,7 +103,7 @@ app.MapGet("/api/clusters", async (RancherSaddle.Api.Services.IRancherClient ran
 .WithName("GetClusters")
 .WithOpenApi();
 
-app.MapGet("/api/clusters/{clusterId}/pods", async (string clusterId, RancherSaddle.Api.Services.IRancherClient rancherClient) =>
+app.MapGet("/api/clusters/{clusterId}/pods", async (string clusterId, IRancherClient rancherClient) =>
 {
     var pods = await rancherClient.GetPodsAsync(clusterId);
     return Results.Ok(pods);
@@ -108,7 +111,7 @@ app.MapGet("/api/clusters/{clusterId}/pods", async (string clusterId, RancherSad
 .WithName("GetClusterPods")
 .WithOpenApi();
 
-app.MapDelete("/api/clusters/{clusterId}/pods/{podId}/restart", async (string clusterId, string podId, RancherSaddle.Api.Services.IRancherClient rancherClient) =>
+app.MapDelete("/api/clusters/{clusterId}/pods/{podId}/restart", async (string clusterId, string podId, IRancherClient rancherClient) =>
 {
     var success = await rancherClient.DeleteAsync($"v3/clusters/{clusterId}/pods/{podId}");
     return success ? Results.Ok(new { message = "Pod restart triggered successfully" }) : Results.BadRequest(new { message = "Failed to restart pod" });
@@ -116,7 +119,7 @@ app.MapDelete("/api/clusters/{clusterId}/pods/{podId}/restart", async (string cl
 .WithName("RestartPod")
 .WithOpenApi();
 
-app.MapGet("/api/clusters/{clusterId}/pods/{podId}/logs", async (string clusterId, string podId, RancherSaddle.Api.Services.IRancherClient rancherClient, int tail = 100) =>
+app.MapGet("/api/clusters/{clusterId}/pods/{podId}/logs", async (string clusterId, string podId, IRancherClient rancherClient, int tail = 100) =>
 {
     var logs = await rancherClient.GetPodLogsAsync(clusterId, podId, tail);
     return Results.Text(logs);

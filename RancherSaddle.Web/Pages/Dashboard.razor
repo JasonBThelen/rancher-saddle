@@ -1,6 +1,5 @@
 @page "/"
 @using RancherSaddle.Shared.Models
-@using RancherSaddle.Api.Services
 @inject HttpClient Http
 @inject NavigationManager Navigation
 
@@ -37,7 +36,7 @@
                             <span class="cluster-name">@cluster.Name</span>
                             <span class="cluster-status">@cluster.Status</span>
                         </div>
-                    }
+                    </div>
                     <div class="card-stats">
                         <div class="stat-item">
                             <span class="stat-label">Running</span>

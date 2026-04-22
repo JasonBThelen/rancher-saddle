@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using RancherSaddle.Shared.Models;
 
 namespace RancherSaddle.Api.Services
 {
@@ -10,7 +11,7 @@ namespace RancherSaddle.Api.Services
         Task<TResponse?> PostAsync<TRequest, TResponse>(string endpoint, TRequest data);
         Task<bool> DeleteAsync(string endpoint);
         Task<string> GetClusterHealth();
-        Task<List<Models.PodPodDto>> GetPodsAsync(string clusterId);
+        Task<List<PodPodDto>> GetPodsAsync(string clusterId);
         Task<string> GetPodLogsAsync(string clusterId, string podId, int tailLines);
     }
 
@@ -83,10 +84,10 @@ namespace RancherSaddle.Api.Services
             }
         }
 
-        public async Task<List<Models.PodPodDto>> GetPodsAsync(string clusterId)
+        public async Task<List<PodPodDto>> GetPodsAsync(string clusterId)
         {
-            var pods = await GetAsync<List<Models.PodPodDto>>($"v3/clusters/{clusterId}/pods");
-            return pods ?? new List<Models.PodPodDto>();
+            var pods = await GetAsync<List<PodPodDto>>($"v3/clusters/{clusterId}/pods");
+            return pods ?? new List<PodPodDto>();
         }
 
         public async Task<string> GetPodLogsAsync(string clusterId, string podId, int tailLines)

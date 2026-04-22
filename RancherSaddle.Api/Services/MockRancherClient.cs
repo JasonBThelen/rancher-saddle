@@ -1,4 +1,5 @@
 using System.Text.Json;
+using RancherSaddle.Shared.Models;
 
 namespace RancherSaddle.Api.Services
 {
@@ -17,10 +18,10 @@ namespace RancherSaddle.Api.Services
             
             if (endpoint.Contains("v3/clusters"))
             {
-                var clusters = new List<Models.RancherCluster>
+                var clusters = new List<RancherCluster>
                 {
-                    new Models.RancherCluster("c-healthy", "Production-Cluster", "active"),
-                    new Models.RancherCluster("c-failed", "Staging-Cluster", "active")
+                    new RancherCluster("c-healthy", "Production-Cluster", "active"),
+                    new RancherCluster("c-failed", "Staging-Cluster", "active")
                 };
                 var json = JsonSerializer.Serialize(clusters);
                 return Task.FromResult(JsonSerializer.Deserialize<T>(json));
@@ -46,13 +47,13 @@ namespace RancherSaddle.Api.Services
             return Task.FromResult("Healthy (Mock)");
         }
 
-        public Task<List<Models.PodPodDto>> GetPodsAsync(string clusterId)
+        public Task<List<PodPodDto>> GetPodsAsync(string clusterId)
         {
             _logger.LogInformation("MockRancherClient: GetPodsAsync for {ClusterId}", clusterId);
-            var pods = new List<Models.PodPodDto>
+            var pods = new List<PodPodDto>
             {
-                new Models.PodPodDto("p1", "pod-1", "Running"),
-                new Models.PodPodDto("p2", "pod-2", clusterId == "c-failed" ? "Failed" : "Running")
+                new PodPodDto("p1", "pod-1", "Running"),
+                new PodPodDto("p2", "pod-2", clusterId == "c-failed" ? "Failed" : "Running")
             };
             return Task.FromResult(pods);
         }

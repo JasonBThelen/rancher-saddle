@@ -1,6 +1,5 @@
 @page "/pods"
 @using RancherSaddle.Shared.Models
-@using RancherSaddle.Api.Services
 @inject HttpClient Http
 @inject NavigationManager Navigation
 
@@ -67,7 +66,10 @@
 }
 
 @code {
-    [Parameter] public string? clusterId { get; set; }
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? clusterId { get; set; }
+
     private List<PodPodDto> pods = new();
     private bool isLoading = true;
     private bool showConfirmModal = false;
@@ -211,7 +213,6 @@
         color: #fff;
     }
 
-    /* Modal */
     .modal-overlay {
         position: fixed;
         inset: 0;
