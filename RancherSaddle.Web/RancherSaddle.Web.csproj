@@ -1,18 +1,18 @@
-<<ProjectProject Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
 
-  <<PropertyGroupPropertyGroup>
-    <<TargetFrameworkTargetFramework>net8.0</TargetFramework>
-    <<NullableNullable>enable</Nullable>
-    <<ImplicitImplicitUsings>enable</ImplicitUsings>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
-  <<ItemGroupItemGroup>
-    <<PackageReferencePackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.26" />
-    <<PackageReferencePackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="8.0.26" PrivateAssets="all" />
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.26" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="8.0.26" PrivateAssets="all" />
   </ItemGroup>
 
-  <<ItemGroupItemGroup>
-    <<ProjectReferenceProjectReference Include="..\RancherSaddle.Api\RancherSaddle.Api.csproj" />
+  <ItemGroup>
+    <ProjectReference Include="..\RancherSaddle.Api\RancherSaddle.Api.csproj" />
   </ItemGroup>
 
 </Project>
