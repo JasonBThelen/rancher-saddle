@@ -41,7 +41,6 @@ data:
 
             proxy_hide_header Content-Security-Policy;
 
-            sub_filter_types text/html;
             sub_filter '</head>' '<link rel="stylesheet" href="/_saddle/mobile.css"><script src="/_saddle/mobile.js" defer></script></head>';
             sub_filter_once on;
         }

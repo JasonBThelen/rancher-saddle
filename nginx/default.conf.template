@@ -44,8 +44,7 @@ server {
         # resources (same origin) are not blocked by a nonce/hash-based policy
         proxy_hide_header Content-Security-Policy;
 
-        # Inject the mobile overlay into HTML responses only
-        sub_filter_types text/html;
+        # Inject the mobile overlay into HTML responses (text/html is the default)
         sub_filter '</head>' '<link rel="stylesheet" href="/_saddle/mobile.css"><script src="/_saddle/mobile.js" defer></script></head>';
         sub_filter_once on;
     }
