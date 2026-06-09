@@ -22,6 +22,9 @@ server {
     # Proxy everything else to the upstream Rancher instance
     location / {
         proxy_pass ${RANCHER_URL};
+        proxy_redirect ${RANCHER_URL} /;
+        proxy_redirect default;
+        proxy_cookie_domain $proxy_host $host;
         proxy_ssl_verify off;       # Rancher commonly uses self-signed certs
         proxy_ssl_server_name on;   # Required for SNI with named vhosts
 

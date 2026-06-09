@@ -27,7 +27,7 @@
   left: 0;
   width: 55px;
   height: var(--header-height, 55px);
-  z-index: 1001;
+  z-index: 1003;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -53,15 +53,18 @@ body.rs-nav-open #rs-hamburger span:nth-child(3) { transform: translateY(-7px) r
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 999;
+  z-index: 1000;
 }
-body.rs-nav-open #rs-backdrop { display: block; }
+body.rs-nav-open #rs-backdrop {
+  display: block;
+  left: 330px;
+}
 
 
 /* ===============================================================
-   MOBILE  ≤ 768px
+   MOBILE  < 992px
    =============================================================== */
-@media (max-width: 768px) {
+@media (max-width: 991px) {
 
   /* --- 1. CSS variable override --------------------------------
      body.theme-* (0,1,1) beats Rancher's JS-injected .theme-* (0,1,0) */
@@ -86,8 +89,12 @@ body.rs-nav-open #rs-backdrop { display: block; }
     position: fixed !important;
     top: var(--header-height, 55px) !important;
     left: -80px !important;
-    z-index: 1000;
+    z-index: 1002 !important;
     transition: left 0.25s ease;
+    pointer-events: auto !important;
+  }
+  .side-menu * {
+    pointer-events: auto !important;
   }
   body.rs-nav-open .side-menu { left: 0 !important; }
 
@@ -98,11 +105,15 @@ body.rs-nav-open #rs-backdrop { display: block; }
     left: -350px !important;
     width: 260px !important;
     height: calc(100vh - var(--header-height, 55px)) !important;
-    z-index: 999;
+    z-index: 1001 !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
     transition: left 0.25s ease;
     box-shadow: 4px 0 20px rgba(0, 0, 0, 0.45);
+    pointer-events: auto !important;
+  }
+  .side-nav * {
+    pointer-events: auto !important;
   }
   body.rs-nav-open .side-nav { left: 70px !important; }
 
@@ -269,18 +280,23 @@ body.rs-nav-open #rs-backdrop { display: block; }
 
   /* Sticky actions (kebab) column — last th/td in each row */
   .sortable-table > thead > tr > th:last-child,
-  .sortable-table > tbody > tr > td:last-child {
+  .sortable-table > tbody > tr:not(.group-row) > td:last-child:not([colspan]) {
     position: sticky !important;
     right: 0 !important;
     z-index: 2;
     /* Background must be opaque so it covers scrolling columns */
     background-color: var(--sortable-table-header-bg, var(--body-bg, #fff)) !important;
   }
-  .sortable-table > tbody > tr > td:last-child {
+  .sortable-table > tbody > tr:not(.group-row) > td:last-child:not([colspan]) {
     background-color: var(--sortable-table-row-bg, var(--body-bg, #fff)) !important;
   }
   .sortable-table > tbody > tr:hover > td:last-child {
     background-color: var(--sortable-table-hover-bg, var(--body-bg, #fff)) !important;
+  }
+
+  /* Elevate action cell when active/focused so kebab menu sits on top of adjacent rows */
+  .sortable-table > tbody > tr > td:last-child:focus-within {
+    z-index: 10 !important;
   }
 
   /* Compact table padding */
@@ -498,6 +514,7 @@ body.rs-nav-open #rs-backdrop { display: block; }
     max-width: calc(100vw - 20px) !important;
     max-height: 60vh !important;
     overflow-y: auto !important;
+    z-index: 1010 !important;
   }
 
 
@@ -521,6 +538,11 @@ body.rs-nav-open #rs-backdrop { display: block; }
   .side-nav .nav-item a {
     padding-top: 10px !important;
     padding-bottom: 10px !important;
+    height: auto !important;
+    min-height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+    line-height: 1.4 !important;
   }
 }
 

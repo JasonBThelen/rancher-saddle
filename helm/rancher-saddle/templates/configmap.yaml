@@ -23,6 +23,9 @@ data:
 
         location / {
             proxy_pass {{ .Values.upstream.url | trimSuffix "/" }};
+            proxy_redirect {{ .Values.upstream.url | trimSuffix "/" }} /;
+            proxy_redirect default;
+            proxy_cookie_domain $proxy_host $host;
             proxy_ssl_verify {{ if .Values.upstream.tlsVerify }}on{{ else }}off{{ end }};
             proxy_ssl_server_name on;
 

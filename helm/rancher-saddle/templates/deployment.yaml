@@ -21,6 +21,21 @@ spec:
         - name: nginx
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              {{- $host := .Values.upstream.url | replace "https://" "" | replace "http://" "" | trimSuffix "/" }}
+              HOST="{{ $host }}"
+              HOST=$(echo $HOST | cut -d: -f1)
+              echo "Waiting for DNS resolution of $HOST..."
+              for i in $(seq 1 30); do
+                if nslookup "$HOST" >/dev/null 2>&1; then
+                  echo "DNS is ready."
+                  break
+                fi
+                sleep 1
+              done
+              exec /docker-entrypoint.sh nginx -g "daemon off;"
           ports:
             - name: http
               containerPort: 80
