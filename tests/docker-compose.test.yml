@@ -1,0 +1,26 @@
+services:
+  mock-upstream:
+    build:
+      context: fixtures
+      dockerfile: Dockerfile.mock-upstream
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 1s
+      timeout: 5s
+      retries: 15
+
+  proxy:
+    image: rancher-saddle-test
+    environment:
+      RANCHER_URL: http://mock-upstream
+    ports:
+      - "18080:80"
+    depends_on:
+      mock-upstream:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/_saddle/mobile.css"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+      start_period: 3s

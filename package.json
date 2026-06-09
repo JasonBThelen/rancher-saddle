@@ -3,16 +3,24 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:int": "vitest run tests/integration",
+    "test:helm": "bash tests/helm/template.test.sh",
+    "test:watch": "vitest",
     "lint": "eslint overlay playwright helm/rancher-saddle/files",
     "format": "prettier --write 'overlay/**/*.{js,css}' 'playwright/**/*.mjs'",
     "prepare": "husky"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
+    "@vitest/coverage-v8": "^4.1.8",
     "eslint": "^9.0.0",
     "husky": "^9.0.0",
+    "jsdom": "^29.1.1",
     "lint-staged": "^15.0.0",
-    "prettier": "^3.0.0"
+    "prettier": "^3.0.0",
+    "vitest": "^2.1.9"
   },
   "lint-staged": {
     "*.{js,mjs}": [

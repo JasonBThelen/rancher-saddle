@@ -25,8 +25,32 @@ jobs:
             -v /tmp/default.conf:/etc/nginx/conf.d/default.conf:ro \
             nginx:alpine nginx -t
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Run unit tests
+        run: npm run test:unit
+
+      - name: Build Docker image for integration tests
+        run: docker build -t rancher-saddle-test .
+
+      - name: Run integration tests
+        run: npm run test:int
+
       - name: Install Helm
         uses: azure/setup-helm@v4
+
+      - name: Run Helm template tests
+        run: npm run test:helm
 
       - name: Set chart version
         id: version
