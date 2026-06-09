@@ -63,6 +63,7 @@ jobs:
             VERSION="${BASE}-dev.$(git rev-parse --short HEAD)"
           fi
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
 
       - name: Package Helm chart
         run: helm package helm/rancher-saddle --version ${{ steps.version.outputs.version }}
@@ -73,4 +74,4 @@ jobs:
 
       - name: Push Helm chart to GHCR
         if: github.event_name != 'pull_request'
-        run: helm push rancher-saddle-${{ steps.version.outputs.version }}.tgz oci://ghcr.io/${{ github.repository_owner }}/charts
+        run: helm push rancher-saddle-${{ steps.version.outputs.version }}.tgz oci://ghcr.io/${{ steps.version.outputs.owner }}/charts
