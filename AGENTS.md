@@ -15,7 +15,7 @@ helm install rancher-saddle ./helm/rancher-saddle --set upstream.url=https://ran
 # Validate nginx config (same check CI runs)
 export RANCHER_URL=https://rancher.example.com
 envsubst '${RANCHER_URL}' < nginx/default.conf.template > /tmp/default.conf
-docker run --rm -v /tmp/default.conf:/etc/nginx/conf.d/default.conf:ro nginx:alpine nginx -t
+docker run --rm --add-host rancher.example.com:127.0.0.1 -v /tmp/default.conf:/etc/nginx/conf.d/default.conf:ro nginx:alpine nginx -t
 
 # Lint / format
 npm run lint

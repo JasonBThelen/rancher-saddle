@@ -64,7 +64,7 @@ docker run -p 8080:80 -e RANCHER_URL=https://your-rancher.example.com rancher-sa
 ```sh
 export RANCHER_URL=https://rancher.example.com
 envsubst '${RANCHER_URL}' < nginx/default.conf.template > /tmp/default.conf
-docker run --rm -v /tmp/default.conf:/etc/nginx/conf.d/default.conf:ro nginx:alpine nginx -t
+docker run --rm --add-host rancher.example.com:127.0.0.1 -v /tmp/default.conf:/etc/nginx/conf.d/default.conf:ro nginx:alpine nginx -t
 ```
 
 ### Run tests
