@@ -29,13 +29,16 @@ server {
         proxy_set_header Host             $proxy_host;
         proxy_set_header X-Real-IP        $remote_addr;
         proxy_set_header X-Forwarded-For  $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        # Always tell Rancher the connection is HTTPS — our proxy is the TLS endpoint.
+        # Sending "http" here causes Steve API to reject WebSocket subscribe requests.
+        proxy_set_header X-Forwarded-Proto https;
 
-        # Rewrite Origin and Referer so Rancher's CSRF/origin check passes.
-        # The browser sends the proxy's origin (e.g. localhost:8080) but
+        # Rewrite Origin so Rancher's CSRF/origin check passes.
+        # The browser sends the proxy origin (e.g. localhost:8080) but
         # Rancher validates that Origin matches its own hostname.
-        proxy_set_header Origin  ${RANCHER_URL};
-        proxy_set_header Referer ${RANCHER_URL}/;
+        # Do NOT set Referer — browsers omit it on WebSocket upgrades and
+        # an artificial value confuses Rancher's routing.
+        proxy_set_header Origin ${RANCHER_URL};
 
         # WebSocket pass-through (kubectl shell, log streaming, /v3/subscribe)
         proxy_set_header Upgrade    $http_upgrade;

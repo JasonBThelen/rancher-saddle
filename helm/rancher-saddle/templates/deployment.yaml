@@ -14,12 +14,12 @@ spec:
       labels:
         {{- include "rancher-saddle.selectorLabels" . | nindent 8 }}
       annotations:
-        # Roll pods when nginx config changes
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/overlay: {{ include (print $.Template.BasePath "/configmap-overlay.yaml") . | sha256sum }}
     spec:
       containers:
         - name: nginx
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: http
@@ -40,6 +40,8 @@ spec:
           volumeMounts:
             - name: nginx-config
               mountPath: /etc/nginx/conf.d
+            - name: overlay
+              mountPath: /usr/share/nginx/saddle
           {{- with .Values.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
@@ -48,6 +50,9 @@ spec:
         - name: nginx-config
           configMap:
             name: {{ include "rancher-saddle.fullname" . }}-nginx
+        - name: overlay
+          configMap:
+            name: {{ include "rancher-saddle.fullname" . }}-overlay
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

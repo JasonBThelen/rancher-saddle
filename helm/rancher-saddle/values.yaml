@@ -1,10 +1,9 @@
 replicaCount: 1
 
 image:
-  repository: ghcr.io/jasonbthelen/rancher-saddle
+  repository: nginx
+  tag: alpine
   pullPolicy: IfNotPresent
-  # Defaults to .Chart.AppVersion when empty
-  tag: ""
 
 # The Rancher instance to proxy.
 # Must not have a trailing slash.

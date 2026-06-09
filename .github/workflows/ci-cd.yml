@@ -7,10 +7,6 @@ on:
   pull_request:
     branches: ["master"]
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: jasonbthelen/rancher-saddle
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,35 +19,33 @@ jobs:
 
       - name: Validate nginx config
         run: |
-          # Substitute a dummy URL so nginx -t can parse the template
           export RANCHER_URL=https://rancher.example.com
           envsubst '${RANCHER_URL}' < nginx/default.conf.template > /tmp/default.conf
           docker run --rm \
             -v /tmp/default.conf:/etc/nginx/conf.d/default.conf:ro \
             nginx:alpine nginx -t
 
-      - name: Log into GitHub Container Registry
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Set chart version
+        id: version
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            BASE=$(grep '^version:' helm/rancher-saddle/Chart.yaml | awk '{print $2}')
+            VERSION="${BASE}-dev.$(git rev-parse --short HEAD)"
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Package Helm chart
+        run: helm package helm/rancher-saddle --version ${{ steps.version.outputs.version }}
+
+      - name: Login to GHCR
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io --username ${{ github.actor }} --password-stdin
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=semver,pattern={{version}}
-            type=sha,format=short
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+      - name: Push Helm chart to GHCR
+        if: github.event_name != 'pull_request'
+        run: helm push rancher-saddle-${{ steps.version.outputs.version }}.tgz oci://ghcr.io/${{ github.repository_owner }}/charts
