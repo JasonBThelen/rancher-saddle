@@ -74,46 +74,102 @@ body.rs-nav-open #rs-backdrop { display: block; }
   #rs-hamburger { display: flex; }
 
 
-  /* --- 2. Side-nav overlay ------------------------------------ */
+  /* --- 2. Side-nav overlay ------------------------------------
+     Rancher 2.14.x has TWO left-nav elements:
+       .side-menu  — compact icon rail (~70px, always position:fixed)
+       .side-nav   — full text navigation (260px, expands on hover)
+     Both must be moved off-screen on mobile and revealed together
+     when the hamburger opens.                                     */
+
+  /* Icon rail: hide off-screen */
+  .side-menu {
+    position: fixed !important;
+    top: var(--header-height, 55px) !important;
+    left: -80px !important;
+    z-index: 1000;
+    transition: left 0.25s ease;
+  }
+  body.rs-nav-open .side-menu { left: 0 !important; }
+
+  /* Text nav: hide off-screen, shown next to icon rail when open */
   .side-nav {
     position: fixed !important;
     top: var(--header-height, 55px) !important;
-    left: -270px !important;
+    left: -350px !important;
     width: 260px !important;
     height: calc(100vh - var(--header-height, 55px)) !important;
-    z-index: 1000;
+    z-index: 999;
     overflow-y: auto !important;
     overflow-x: hidden !important;
     transition: left 0.25s ease;
     box-shadow: 4px 0 20px rgba(0, 0, 0, 0.45);
   }
-  body.rs-nav-open .side-nav { left: 0 !important; }
+  body.rs-nav-open .side-nav { left: 70px !important; }
 
 
-  /* --- 3. Header --------------------------------------------- */
+  /* --- 3. Header ----------------------------------------------
+     Only pad the TOP TOOLBAR header (main-header or the first
+     header inside .dashboard-content) to make room for the
+     hamburger. Do NOT use header[class*="header"] — that
+     accidentally matches header.with-subheader (page content
+     headers) because "header" appears in "with-subheader".      */
   header.main-header,
-  .dashboard-content > header,
-  header[class*="header"] {
+  .dashboard-content > header {
     padding-left: 55px !important;
     box-sizing: border-box !important;
   }
   .cluster-name,
   .product-name,
-  .simple-title,
-  header .title {
+  .simple-title {
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     max-width: 35vw !important;
   }
 
+  /* Page content header (h1 "Deployments", "Create" button row).
+     Rancher sets max-width: 25vw on .title which = 97.5px at 390px.
+     Override to let the title use available space.               */
+  header.with-subheader {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    padding-left: 0 !important;
+  }
+  header.with-subheader .title {
+    max-width: none !important;
+    width: auto !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+  header.with-subheader .title h1,
+  header.with-subheader .title h2 {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box;
+  }
+
 
   /* --- 4. Main content area -----------------------------------
-     IMPORTANT: do NOT set overflow-x:hidden on .main-layout —
-     Rancher already sets overflow:auto there, which is what lets
-     wide tables scroll. Adding hidden clips them instead.        */
+     Root cause: CSS Grid 'auto' column resolves to max-content
+     (table width, ~863px) when the grid has overflow:visible.
+     Fix: override the track to minmax(0,1fr) so the column is
+     capped to the container width, then overflow-x:auto on
+     .main-layout creates the inner horizontal scroll.
+     Also remove the 70px left padding that exists only to make
+     room for the icon rail (.side-menu) — which we hide.         */
+  .dashboard-content {
+    grid-template-columns:
+      var(--wm-vl-width, 0px)
+      var(--nav-width)
+      minmax(0, 1fr)
+      var(--wm-vr-width, 0px) !important;
+    padding-left: 0 !important;
+  }
   .main-layout {
     min-width: 0 !important;
+    overflow-x: auto !important;
   }
   .outlet {
     padding: 10px !important;
@@ -124,20 +180,19 @@ body.rs-nav-open #rs-backdrop { display: block; }
 
   /* --- 5. Title bar ------------------------------------------
      Scoped rule .title-bar[data-v-*] sets min-width:740px (0,2,0).
-     !important beats it regardless of specificity.               */
+     !important beats it regardless of specificity.
+     Let the page heading (h1) wrap naturally — don't truncate it.
+     Only the cluster/product name in the top toolbar truncates.  */
   .title-bar {
     min-width: 0 !important;
     flex-wrap: wrap !important;
     gap: 6px !important;
   }
-  .title-bar .title,
   .title-bar h1,
   .title-bar h2 {
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
     min-width: 0 !important;
-    flex-shrink: 1 !important;
+    white-space: normal !important;
+    word-break: break-word;
   }
 
 

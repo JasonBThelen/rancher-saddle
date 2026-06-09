@@ -1,26 +1,29 @@
 /* Rancher Saddle — Mobile Nav Toggle
    Injects a hamburger button and backdrop into the Rancher
-   dashboard after Vue has mounted the layout components. */
+   dashboard after Vue has mounted the layout components.
+
+   Rancher 2.14.x has two nav elements:
+     .side-menu  — compact icon rail (~70px wide, always fixed)
+     .side-nav   — full text navigation (260px, expands on hover)
+   The hamburger toggles body.rs-nav-open which CSS uses to
+   slide both elements in from the left. */
 (function () {
   'use strict';
 
   function init() {
     var header = document.querySelector('header');
-    var sideNav = document.querySelector('.side-nav');
-    if (!header || !sideNav || document.getElementById('rs-hamburger')) return false;
+    // Wait until at least one nav element exists
+    var navReady = document.querySelector('.side-nav') || document.querySelector('.side-menu');
+    if (!header || !navReady || document.getElementById('rs-hamburger')) return false;
 
     // Hamburger button
     var btn = document.createElement('button');
     btn.id = 'rs-hamburger';
     btn.setAttribute('aria-label', 'Toggle navigation');
     btn.setAttribute('aria-expanded', 'false');
-    btn.setAttribute('aria-controls', 'rs-nav');
     btn.innerHTML = '<span></span><span></span><span></span>';
     btn.addEventListener('click', toggleNav);
     document.body.appendChild(btn);
-
-    // Give the side nav an id for aria-controls
-    sideNav.id = 'rs-nav';
 
     // Backdrop (tap outside to close)
     var backdrop = document.createElement('div');
@@ -44,11 +47,11 @@
     if (btn) btn.setAttribute('aria-expanded', 'false');
   }
 
-  // Close nav when Rancher's Vue Router navigates (SPA route change)
+  // Close nav when Vue Router navigates (SPA route change)
   window.addEventListener('popstate', closeNav);
 
-  // Rancher is a Vue SPA — the layout components mount after the
-  // initial HTML loads. Poll via MutationObserver until ready.
+  // Rancher is a Vue SPA — layout mounts after initial HTML.
+  // Poll via MutationObserver until nav elements are ready.
   if (!init()) {
     var observer = new MutationObserver(function () {
       if (init()) observer.disconnect();
