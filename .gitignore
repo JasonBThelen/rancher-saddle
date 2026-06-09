@@ -7,6 +7,15 @@ Thumbs.db
 .idea/
 *.swp
 
+# Environment — never commit real credentials
+.env
+.env.local
+.env.*.local
+
 # Helm
 helm/*/charts/
 helm/*/*.lock
+*.tgz
+
+# Node
+node_modules/
