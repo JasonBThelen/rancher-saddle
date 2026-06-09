@@ -67,6 +67,16 @@ envsubst '${RANCHER_URL}' < nginx/default.conf.template > /tmp/default.conf
 docker run --rm -v /tmp/default.conf:/etc/nginx/conf.d/default.conf:ro nginx:alpine nginx -t
 ```
 
+### Run tests
+
+```sh
+npm install
+npm test            # everything (unit + integration; integration needs Docker)
+npm run test:unit   # Vitest/jsdom — overlay/mobile.js
+npm run test:int    # docker compose — nginx injection behavior
+npm run test:helm   # Helm template assertions
+```
+
 ### Visual verification
 
 After editing CSS or JS, verify visually against a real Rancher instance:

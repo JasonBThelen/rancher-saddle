@@ -21,6 +21,12 @@ docker run --rm -v /tmp/default.conf:/etc/nginx/conf.d/default.conf:ro nginx:alp
 npm run lint
 npm run format
 
+# Run tests
+npm test            # everything (unit + integration; integration needs Docker)
+npm run test:unit   # Vitest/jsdom — overlay/mobile.js
+npm run test:int    # docker compose — nginx injection behavior
+npm run test:helm   # Helm template assertions
+
 # Visual verification after CSS/JS changes
 cd playwright && node screenshot.mjs [/optional/url/path]
 ```
