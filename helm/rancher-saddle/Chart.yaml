@@ -1,0 +1,12 @@
+apiVersion: v2
+name: rancher-saddle
+description: Mobile CSS overlay for the Rancher dashboard, delivered via nginx reverse proxy
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - rancher
+  - mobile
+  - proxy
+sources:
+  - https://github.com/JasonBThelen/rancher-saddle

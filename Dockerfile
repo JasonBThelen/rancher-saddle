@@ -1,26 +1,14 @@
-# multistage build for .NET 8
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-WORKDIR /src
+FROM nginx:alpine
 
-# Copy everything and restore
-COPY . .
-RUN dotnet restore "RancherSaddle.sln"
+# Overlay files served at /_saddle/
+COPY overlay/ /usr/share/nginx/saddle/
 
-# Build and publish API
-RUN dotnet publish "RancherSaddle.Api/RancherSaddle.Api.csproj" -c Release -o /app/publish-api
+# nginx config template — RANCHER_URL is filled in at startup
+COPY nginx/default.conf.template /etc/nginx/conf.d/default.conf.template
 
-# Build and publish Web
-RUN dotnet publish "RancherSaddle.Web/RancherSaddle.Web.csproj" -c Release -o /app/publish-web
-
-# Final Stage
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
-WORKDIR /app
-COPY --from=build /app/publish-api .
-
-# Copy Web assets to the API's wwwroot (if serving as one unit)
-# Or deploy as separate pods. For the "Saddle" we'll serve it as a single unit for simplicity.
-COPY --from=build /app/publish-web /app/wwwroot
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
 EXPOSE 80
-EXPOSE 443
-ENTRYPOINT ["dotnet", "RancherSaddle.Api.dll"]
+
+ENTRYPOINT ["/docker-entrypoint.sh"]

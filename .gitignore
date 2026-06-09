@@ -1,7 +1,12 @@
-[Bb]in/
-[Oo]bj/
-.vs/
-.vscode/
-*.user
-*.suo
-*.sln.doccache
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/settings.json
+.idea/
+*.swp
+
+# Helm
+helm/*/charts/
+helm/*/*.lock

@@ -1,0 +1,156 @@
+/* =============================================================
+   Rancher Saddle — Mobile Overlay
+   Injected into the Rancher dashboard via nginx sub_filter.
+   Targets the Rancher Dashboard (Vue/Nuxt) class structure.
+   ============================================================= */
+
+/* --- Hamburger button (hidden on desktop) --- */
+#rs-hamburger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 55px;
+  height: var(--header-height, 55px);
+  z-index: 1001;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+#rs-hamburger span {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: var(--header-btn-text, #fff);
+  border-radius: 2px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  pointer-events: none;
+}
+
+/* Animate to X when open */
+body.rs-nav-open #rs-hamburger span:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+body.rs-nav-open #rs-hamburger span:nth-child(2) {
+  opacity: 0;
+}
+body.rs-nav-open #rs-hamburger span:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
+/* --- Backdrop (shown behind open nav) --- */
+#rs-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+body.rs-nav-open #rs-backdrop {
+  display: block;
+}
+
+/* =============================================================
+   Mobile breakpoint — phones and small tablets
+   ============================================================= */
+@media (max-width: 768px) {
+
+  /* Show the hamburger */
+  #rs-hamburger {
+    display: flex;
+  }
+
+  /* Collapse the sidebar grid column.
+     Rancher's layout is a CSS grid driven by --nav-width.
+     Setting it to 0 collapses the nav column; the main content
+     expands to fill the full width automatically. */
+  #__layout {
+    --nav-width: 0px;
+  }
+
+  /* Pull the sidebar out of the grid and make it an overlay.
+     Uses !important to beat Vue's scoped attribute selectors
+     (e.g. .side-nav[data-v-xxxx]) which have higher specificity
+     than a plain class selector. */
+  #__layout .side-nav {
+    position: fixed !important;
+    top: var(--header-height, 55px) !important;
+    left: -260px !important;
+    width: 250px !important;
+    height: calc(100vh - var(--header-height, 55px)) !important;
+    z-index: 1000;
+    transition: left 0.25s ease;
+    overflow-y: auto !important;
+    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Slide in when open */
+  body.rs-nav-open #__layout .side-nav {
+    left: 0 !important;
+  }
+
+  /* Push header content right to clear the hamburger button */
+  header {
+    padding-left: 55px !important;
+    box-sizing: border-box;
+  }
+
+  /* Truncate long cluster/product names so the header doesn't overflow */
+  header .cluster-name,
+  header .product-name,
+  header .simple-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 30vw;
+  }
+
+  /* --- Tables ---
+     Rancher uses custom div-based tables (sortable-table).
+     Horizontal scroll is the safest approach. */
+  .sortable-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Prevent table columns from wrapping awkwardly */
+  .sortable-table tbody td {
+    white-space: nowrap;
+  }
+
+  /* --- Touch targets ---
+     iOS/Android HIG recommends minimum 44px. */
+  .btn,
+  .nav-item > a,
+  .nav-link,
+  .group-tab {
+    min-height: 44px;
+  }
+
+  /* Nav group items inside the sidebar already have reasonable height,
+     but bump them slightly for touch */
+  .side-nav .package a,
+  .side-nav .nav-item a {
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+  }
+
+  /* --- Misc layout fixes --- */
+  /* Prevent horizontal overflow on the main content area */
+  .main-layout .outlet {
+    overflow-x: hidden;
+    padding: 12px;
+  }
+
+  /* Gauges/stat cards: stack vertically instead of overflowing */
+  .gauges,
+  .cluster-metrics {
+    flex-wrap: wrap;
+  }
+}

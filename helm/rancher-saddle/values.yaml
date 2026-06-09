@@ -1,0 +1,44 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/jasonbthelen/rancher-saddle
+  pullPolicy: IfNotPresent
+  # Defaults to .Chart.AppVersion when empty
+  tag: ""
+
+# The Rancher instance to proxy.
+# Must not have a trailing slash.
+upstream:
+  url: "https://rancher.example.com"
+  # Set true only if Rancher's TLS certificate is trusted by the proxy pod.
+  # Most internal installs use self-signed certs, so this stays false.
+  tlsVerify: false
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+  # The hostname users will browse to for the mobile view
+  host: "rancher-mobile.example.com"
+  tls: []
+  #  - secretName: rancher-saddle-tls
+  #    hosts:
+  #      - rancher-mobile.example.com
+
+resources: {}
+  # requests:
+  #   cpu: 50m
+  #   memory: 32Mi
+  # limits:
+  #   cpu: 100m
+  #   memory: 64Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
