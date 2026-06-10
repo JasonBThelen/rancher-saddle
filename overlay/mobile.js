@@ -7,7 +7,9 @@
   function check() {
     var header = document.querySelector('header');
     // Wait until at least one nav element exists
-    var navReady = document.querySelector('.side-nav') || document.querySelector('.side-menu');
+    var navReady =
+      document.querySelector('.side-nav') ||
+      document.querySelector('.side-menu');
     var btn = document.getElementById('rs-hamburger');
     var backdrop = document.getElementById('rs-backdrop');
 

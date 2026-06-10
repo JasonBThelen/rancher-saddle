@@ -41,12 +41,20 @@
   height: 2px;
   background: var(--header-btn-text, #fff);
   border-radius: 2px;
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
   pointer-events: none;
 }
-body.rs-nav-open #rs-hamburger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-body.rs-nav-open #rs-hamburger span:nth-child(2) { opacity: 0; }
-body.rs-nav-open #rs-hamburger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+body.rs-nav-open #rs-hamburger span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+body.rs-nav-open #rs-hamburger span:nth-child(2) {
+  opacity: 0;
+}
+body.rs-nav-open #rs-hamburger span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
 
 #rs-backdrop {
   display: none;
@@ -60,22 +68,21 @@ body.rs-nav-open #rs-backdrop {
   left: 330px;
 }
 
-
 /* ===============================================================
    MOBILE  < 992px
    =============================================================== */
 @media (max-width: 991px) {
-
   /* --- 1. CSS variable override --------------------------------
      body.theme-* (0,1,1) beats Rancher's JS-injected .theme-* (0,1,0) */
   body.theme-light,
   body.theme-dark,
-  body[class*="theme-"] {
+  body[class*='theme-'] {
     --nav-width: 0px;
   }
 
-  #rs-hamburger { display: flex; }
-
+  #rs-hamburger {
+    display: flex;
+  }
 
   /* --- 2. Side-nav overlay ------------------------------------
      Rancher 2.14.x has TWO left-nav elements:
@@ -96,7 +103,9 @@ body.rs-nav-open #rs-backdrop {
   .side-menu * {
     pointer-events: auto !important;
   }
-  body.rs-nav-open .side-menu { left: 0 !important; }
+  body.rs-nav-open .side-menu {
+    left: 0 !important;
+  }
 
   /* Text nav: hide off-screen, shown next to icon rail when open */
   .side-nav {
@@ -115,8 +124,9 @@ body.rs-nav-open #rs-backdrop {
   .side-nav * {
     pointer-events: auto !important;
   }
-  body.rs-nav-open .side-nav { left: 70px !important; }
-
+  body.rs-nav-open .side-nav {
+    left: 70px !important;
+  }
 
   /* --- 3. Header ----------------------------------------------
      Only pad the TOP TOOLBAR header (main-header or the first
@@ -161,6 +171,26 @@ body.rs-nav-open #rs-backdrop {
     box-sizing: border-box;
   }
 
+  /* --- 3b. Top toolbar right side (namespace filter + action icons)
+     .rd-header-right holds .top (.ns-filter namespace dropdown,
+     ~280px) and .header-buttons (kubectl shell, edit-as-yaml, search,
+     docs, notifications, avatar — combined ~450px). As a flex item it
+     defaults to min-width:auto, so flexbox refuses to shrink it below
+     its ~760px content size. That overflows header.offsetWidth (390px)
+     and inflates document.documentElement.scrollWidth to ~860px, which
+     is also what makes mobile browsers zoom the whole page out to fit
+     — leaving the band of blank space below the viewport-height layout.
+     Fix: let it shrink to the available width and scroll internally so
+     nothing escapes the header box. */
+  .rd-header-right {
+    min-width: 0 !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  .rd-header-right .top,
+  .rd-header-right .header-buttons {
+    flex-shrink: 0 !important;
+  }
 
   /* --- 4. Main content area -----------------------------------
      Root cause: CSS Grid 'auto' column resolves to max-content
@@ -188,7 +218,6 @@ body.rs-nav-open #rs-backdrop {
     box-sizing: border-box;
   }
 
-
   /* --- 5. Title bar ------------------------------------------
      Scoped rule .title-bar[data-v-*] sets min-width:740px (0,2,0).
      !important beats it regardless of specificity.
@@ -202,10 +231,26 @@ body.rs-nav-open #rs-backdrop {
   .title-bar h1,
   .title-bar h2 {
     min-width: 0 !important;
+    max-width: none !important;
     white-space: normal !important;
     word-break: break-word;
   }
 
+  /* Resource detail pages (e.g. "Deployment: <name>") nest the title
+     and .actions (state badge, Show Configuration, kebab) inside a
+     .top flex container — .title-bar itself is display:block here, so
+     its flex-wrap above doesn't apply. Without wrapping, .actions
+     (~275px, min-width:auto) refuses to shrink, squeezing the h1 down
+     to ~100px and breaking "Deployment: name" into a vertical stack of
+     2-3 character lines. Wrap .top so the title gets the full row and
+     .actions drops to its own row below. h1.title also carries
+     max-width:calc(100% - 260px) (reserved for .actions on the same
+     row) — override above so the title can use the full row once
+     wrapped. */
+  .title-bar .top {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
 
   /* --- 6. Sub-header / breadcrumbs --------------------------- */
   .sub-header,
@@ -228,7 +273,6 @@ body.rs-nav-open #rs-backdrop {
     max-width: 40vw;
   }
 
-
   /* --- 7. Fixed-header-actions (search + bulk toolbar) --------
      Rancher uses a named-grid-lines layout; reflow to flex wrap  */
   .fixed-header-actions {
@@ -239,21 +283,26 @@ body.rs-nav-open #rs-backdrop {
     padding: 6px 8px !important;
     min-width: 0 !important;
   }
-  .fixed-header-actions .bulk  { flex: 0 0 auto; min-width: 0; }
-  .fixed-header-actions .middle { flex: 0 0 auto; min-width: 0; }
+  .fixed-header-actions .bulk {
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+  .fixed-header-actions .middle {
+    flex: 0 0 auto;
+    min-width: 0;
+  }
   .fixed-header-actions .search {
     flex: 1 1 100% !important;
     min-width: 0 !important;
     max-width: 100% !important;
   }
   .fixed-header-actions .search input,
-  .fixed-header-actions input[type="search"],
-  .fixed-header-actions input[type="text"] {
+  .fixed-header-actions input[type='search'],
+  .fixed-header-actions input[type='text'] {
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box;
   }
-
 
   /* --- 8. Tables ---------------------------------------------
      Tables wider than the viewport scroll horizontally within
@@ -285,13 +334,22 @@ body.rs-nav-open #rs-backdrop {
     right: 0 !important;
     z-index: 2;
     /* Background must be opaque so it covers scrolling columns */
-    background-color: var(--sortable-table-header-bg, var(--body-bg, #fff)) !important;
+    background-color: var(
+      --sortable-table-header-bg,
+      var(--body-bg, #fff)
+    ) !important;
   }
   .sortable-table > tbody > tr:not(.group-row) > td:last-child:not([colspan]) {
-    background-color: var(--sortable-table-row-bg, var(--body-bg, #fff)) !important;
+    background-color: var(
+      --sortable-table-row-bg,
+      var(--body-bg, #fff)
+    ) !important;
   }
   .sortable-table > tbody > tr:hover > td:last-child {
-    background-color: var(--sortable-table-hover-bg, var(--body-bg, #fff)) !important;
+    background-color: var(
+      --sortable-table-hover-bg,
+      var(--body-bg, #fff)
+    ) !important;
   }
 
   /* Elevate action cell when active/focused so kebab menu sits on top of adjacent rows */
@@ -309,7 +367,6 @@ body.rs-nav-open #rs-backdrop {
   .sortable-table-header {
     min-width: 0 !important;
   }
-
 
   /* --- 9. Cluster explorer: resource gauges ------------------
      .resource-gauges is display:grid (NOT flex).
@@ -332,7 +389,6 @@ body.rs-nav-open #rs-backdrop {
     box-sizing: border-box;
   }
 
-
   /* --- 10. Cluster explorer: card grids ----------------------
      .card-grid-container has minmax(600px,1fr) — causes 600px-wide
      columns on any screen. Force single column.
@@ -348,7 +404,6 @@ body.rs-nav-open #rs-backdrop {
     grid-template-columns: 1fr !important;
     overflow: visible !important;
   }
-
 
   /* --- 11. Dashboard cards & metrics ------------------------- */
   .glance-all,
@@ -391,7 +446,6 @@ body.rs-nav-open #rs-backdrop {
     height: auto !important;
   }
 
-
   /* --- 12. Info boxes / detail key-value views --------------- */
   .info-box-section,
   .box-array,
@@ -426,7 +480,6 @@ body.rs-nav-open #rs-backdrop {
     gap: 4px !important;
   }
 
-
   /* --- 13. Forms --------------------------------------------- */
   .form-row,
   .row-of-columns {
@@ -438,22 +491,23 @@ body.rs-nav-open #rs-backdrop {
     min-width: 0 !important;
     flex: 1 1 100% !important;
   }
-  .col-full, .col-half, .col-third {
+  .col-full,
+  .col-half,
+  .col-third {
     width: 100% !important;
     max-width: 100% !important;
   }
-  input[type="text"],
-  input[type="password"],
-  input[type="email"],
-  input[type="url"],
-  input[type="number"],
-  input[type="search"],
+  input[type='text'],
+  input[type='password'],
+  input[type='email'],
+  input[type='url'],
+  input[type='number'],
+  input[type='search'],
   select,
   textarea {
     max-width: 100% !important;
     box-sizing: border-box;
   }
-
 
   /* --- 14. Modals -------------------------------------------- */
   .v--modal-overlay {
@@ -484,7 +538,6 @@ body.rs-nav-open #rs-backdrop {
     max-width: 480px;
   }
 
-
   /* --- 15. YAML / code editors ------------------------------- */
   .yaml-editor,
   .code-mirror-container,
@@ -497,7 +550,6 @@ body.rs-nav-open #rs-backdrop {
     overflow-x: auto !important;
   }
 
-
   /* --- 16. Tabs ---------------------------------------------- */
   .tabs,
   .tab-list {
@@ -505,8 +557,11 @@ body.rs-nav-open #rs-backdrop {
     -webkit-overflow-scrolling: touch;
     flex-wrap: nowrap !important;
   }
-  .tab, .tab-item { flex-shrink: 0; white-space: nowrap; }
-
+  .tab,
+  .tab-item {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
 
   /* --- 17. Dropdowns ----------------------------------------- */
   .dropdown-menu,
@@ -516,7 +571,6 @@ body.rs-nav-open #rs-backdrop {
     overflow-y: auto !important;
     z-index: 1010 !important;
   }
-
 
   /* --- 18. Generic overflow guards ---------------------------
      Prevent absolutely-wide elements escaping the viewport.
@@ -531,9 +585,10 @@ body.rs-nav-open #rs-backdrop {
     box-sizing: border-box;
   }
 
-
   /* --- 19. Touch targets ------------------------------------- */
-  .btn { min-height: 44px; }
+  .btn {
+    min-height: 44px;
+  }
   .side-nav .package a,
   .side-nav .nav-item a {
     padding-top: 10px !important;
@@ -546,13 +601,13 @@ body.rs-nav-open #rs-backdrop {
   }
 }
 
-
 /* ===============================================================
    PHONE  ≤ 480px  — more aggressive stacking
    =============================================================== */
 @media (max-width: 480px) {
-
-  .outlet { padding: 6px !important; }
+  .outlet {
+    padding: 6px !important;
+  }
 
   /* Single-column gauges on phones */
   .gauges > * {
