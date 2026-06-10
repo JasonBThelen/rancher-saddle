@@ -5,7 +5,13 @@
    Layout facts verified from bundle (index.b1dab77c.js):
    • --nav-width lives on body.theme-light/dark (JS-injected).
      body.theme-* specificity (0,1,1) beats .theme-* (0,1,0).
-   • .dashboard-content grid: wm-vl | nav | main | wm-vr columns.
+   • .dashboard-content grid-template-areas DIFFERS PER PAGE, e.g.:
+       /dashboard/home (3 cols):     cluster explorer pages (4 cols x 3 rows):
+       "header header header"          "header header header header"
+       "wm-vl  main   wm-vr"            "wm-vl  nav  main  wm-vr"
+                                         "wm-vl  wm   wm    wm-vr"
+     "main" lands in a different column on each. See section 4 for how
+     the fix sidesteps per-page column counting entirely.
    • .main-layout has Rancher's own overflow:auto — don't add
      overflow-x:hidden here or tables get clipped instead of scrolled.
    • .resource-gauges is display:grid, NOT flex — use
@@ -148,6 +154,18 @@ body.rs-nav-open #rs-backdrop {
     max-width: 35vw !important;
   }
 
+  /* Rancher wordmark logo (rhino + "Rancher" text, intrinsic 209x45)
+     is a flex item with no intrinsic shrink — at this width its
+     container is narrower than the logo itself, clipping it down to
+     just "RAN". Let it scale down to fit, preserving aspect ratio. */
+  .side-menu-logo,
+  .side-menu-logo-img {
+    max-width: 100% !important;
+    width: auto !important;
+    height: auto !important;
+    min-width: 0 !important;
+  }
+
   /* Page content header (h1 "Deployments", "Create" button row).
      Rancher sets max-width: 25vw on .title which = 97.5px at 390px.
      Override to let the title use available space.               */
@@ -193,22 +211,28 @@ body.rs-nav-open #rs-backdrop {
   }
 
   /* --- 4. Main content area -----------------------------------
-     Root cause: CSS Grid 'auto' column resolves to max-content
-     (table width, ~863px) when the grid has overflow:visible.
-     Fix: override the track to minmax(0,1fr) so the column is
-     capped to the container width, then overflow-x:auto on
-     .main-layout creates the inner horizontal scroll.
+     Root cause: .dashboard-content's grid-template-areas DIFFERS
+     PER PAGE (see top-of-file notes) with "main" landing in a
+     different named column each time, and Grid's 'auto' columns
+     resolve to max-content (table width, ~863px) when overflow is
+     visible. A fixed-length track-list override can't satisfy
+     every page's area-template at once — it either misaligns
+     "main" onto a 0px track (blank page) or lets "main" inherit
+     a huge max-content track (whole-page horizontal overflow).
+     Fix: collapse to a SINGLE 1fr track (absorbs all 390px; any
+     extra implicit tracks other templates need become empty/0px)
+     and make .main-layout span every track via grid-column:1/-1.
+     The total is always 100% of the container regardless of which
+     column "main" was named in. overflow-x:auto on .main-layout
+     then creates the inner horizontal scroll for wide tables.
      Also remove the 70px left padding that exists only to make
-     room for the icon rail (.side-menu) — which we hide.         */
+     room for the icon rail (.side-menu) — which we hide.        */
   .dashboard-content {
-    grid-template-columns:
-      var(--wm-vl-width, 0px)
-      var(--nav-width)
-      minmax(0, 1fr)
-      var(--wm-vr-width, 0px) !important;
+    grid-template-columns: 1fr !important;
     padding-left: 0 !important;
   }
   .main-layout {
+    grid-column: 1 / -1 !important;
     min-width: 0 !important;
     overflow-x: auto !important;
   }
@@ -216,6 +240,42 @@ body.rs-nav-open #rs-backdrop {
     padding: 10px !important;
     min-width: 0 !important;
     box-sizing: border-box;
+  }
+
+  /* Tabbed-container component (used for every tab strip in the
+     dashboard — Cluster Dashboard's Events/Alerts/Certificates/
+     Cluster Metrics tabs, resource detail tabs, etc.) computes
+     min-width: fit-content from its tab content's natural width
+     (e.g. ~488px when a tab panel holds wide flex rows). That
+     forces the WHOLE tab container — and everything inside it —
+     wider than the 390px viewport, independent of the .main-layout
+     fix above. Let it shrink to fit like everything else.        */
+  .tabbed-container {
+    min-width: 0 !important;
+  }
+
+  /* Resource detail/edit pages with a vertical side-tab nav (e.g.
+     PersistentVolumeClaim, StorageClass) lay out
+     .tabbed-container.side-tabs as a row: a 200px ul.tabs.vertical
+     nav beside a .tab-container content panel squeezed into the
+     remaining ~178px, overlapping its own form fields. Stack the
+     nav above the content and let it wrap into a horizontal tab
+     bar instead. */
+  .tabbed-container.side-tabs {
+    flex-direction: column !important;
+  }
+  .tabbed-container.side-tabs > .tabs.vertical {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+  .tabbed-container.side-tabs > .tabs.vertical > .tab {
+    width: auto !important;
+  }
+  .tabbed-container.side-tabs > .tab-container {
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
   /* --- 5. Title bar ------------------------------------------
@@ -250,6 +310,41 @@ body.rs-nav-open #rs-backdrop {
   .title-bar .top {
     flex-wrap: wrap !important;
     gap: 6px !important;
+  }
+
+  /* Resource list pages (e.g. Users & Authentication) use a different
+     header: <header class="with-subheader"> is a CSS Grid with
+     "title actions" / "sub-header sub-header" areas. The title column
+     resolves to a fixed ~40px regardless of the heading text, clipping
+     titles like "Users" down to "U...". Stack title, actions, and
+     sub-header into full-width rows instead. */
+  header.with-subheader {
+    grid-template-columns: 1fr !important;
+    grid-template-areas:
+      'type-banner'
+      'title'
+      'actions'
+      'sub-header'
+      'state-banner' !important;
+  }
+  header.with-subheader .title {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  header.with-subheader h1,
+  header.with-subheader h2 {
+    width: auto !important;
+    min-width: 0 !important;
+    white-space: normal !important;
+    word-break: break-word;
+  }
+  header.with-subheader .actions-container,
+  header.with-subheader .actions {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
   }
 
   /* --- 6. Sub-header / breadcrumbs --------------------------- */
@@ -405,7 +500,82 @@ body.rs-nav-open #rs-backdrop {
     overflow: visible !important;
   }
 
+  /* Apps & Marketplace > Charts: .wrapper > .filter-panel +
+     .right-section is a flex row (250px sidebar + content) that
+     doesn't fit at 378px; .right-section's .app-chart-cards grid is
+     hardcoded to grid-template-columns:400px, clipping cards to
+     ~100px. Stack the filter panel above the card grid and let cards
+     fill the available width. */
+  .wrapper:has(> .filter-panel) {
+    flex-direction: column !important;
+  }
+  .wrapper > .filter-panel,
+  .wrapper > .right-section {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+  .app-chart-cards {
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+  }
+  .app-chart-cards > .item-card {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Apps & Marketplace > Chart detail/install page: .chart-header
+     (icon/title/description) is flex-nowrap with a 195px
+     "Install this version" .header-actions button, pushing the
+     button off-screen. .chart-body is a flex row with
+     .chart-body__readme (min-width:400px) beside a fixed-300px
+     .chart-body__info "Chart Versions" sidebar — together wider than
+     378px. Wrap the header actions onto their own row and stack the
+     readme above the info sidebar. */
+  .chart-header {
+    flex-wrap: wrap !important;
+  }
+  .chart-header .header-actions {
+    width: 100% !important;
+  }
+  .chart-body {
+    flex-direction: column !important;
+  }
+  .chart-body > .chart-body__readme,
+  .chart-body > .chart-body__info {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
   /* --- 11. Dashboard cards & metrics ------------------------- */
+  /* Cluster Dashboard "glance" bar (Provider/K8s Version/
+     Architecture/Created + Cluster Tools button) is flex-nowrap
+     with min-width:auto items — at this width the items overflow
+     the bar, squeezing "Created" to ~54px (text wraps to 3 lines)
+     and pushing the Cluster Tools button + badge off-screen,
+     reachable only via horizontal scroll. Wrap onto multiple
+     lines instead, keeping each item's natural width.            */
+  .cluster-dashboard-glance {
+    flex-wrap: wrap !important;
+    row-gap: 8px !important;
+  }
+
+  /* Metrics tab toolbar (.graph-options: Detail/Summary toggle on
+     the left, .range-refresh "Range"/"Refresh" dropdowns on the
+     right via justify-content:space-between) is flex-nowrap and
+     446px wide — .range-refresh (220px, two 100px selects) gets
+     pushed off the right edge of the 390px viewport with no scroll
+     affordance. Wrap .range-refresh onto its own row below.        */
+  .graph-options {
+    flex-wrap: wrap !important;
+    row-gap: 8px !important;
+  }
+  .range-refresh {
+    flex-wrap: wrap !important;
+    row-gap: 8px !important;
+  }
+
   .glance-all,
   .glance-row {
     flex-wrap: wrap !important;
@@ -453,6 +623,16 @@ body.rs-nav-open #rs-backdrop {
   .info-group {
     grid-template-columns: 1fr !important;
   }
+
+  /* Resource detail masthead: Namespace/Age/Image/etc + Labels +
+     Annotations render as a 3-column grid (110px 110px 110px), but each
+     .label inside has a fixed width:120px — wider than its own 110px
+     column — pushing the value into the next column and overlapping
+     "Labels"/"Annotations". Stack to one full-width column. */
+  .metadata-section {
+    grid-template-columns: 1fr !important;
+    row-gap: 16px !important;
+  }
   .label-value,
   .key-value,
   .labeled-input.compact {
@@ -480,6 +660,47 @@ body.rs-nav-open #rs-backdrop {
     gap: 4px !important;
   }
 
+  /* Labels/Annotations "Tag" chips (.rc-tag/.key-value-row, one per
+     key:value pill inside .labels/.annotations) compute their whole
+     chain — .annotations > .key-value > .row > .key-value-row >
+     .rc-button > .rc-tag > .tag-data — from .tag-data's unbroken
+     nowrap text. A long annotation value (e.g. a container ID, ~650px
+     of text) becomes that text's max-content width; CSS Grid's
+     default min-width:auto on .annotations then forces it as the
+     *minimum* size of .metadata-section's 1fr column too, so the
+     whole chip renders ~667px wide — 280px past the 378px column,
+     with no scroll affordance. Break the loop from both ends:
+     min-width:0 down the whole chain stops .annotations from forcing
+     the column wide, and white-space:normal + word-break on
+     .tag-data lets the long value wrap onto multiple lines instead
+     of demanding one unbroken 650px line. */
+  .labels,
+  .annotations,
+  .labels .key-value,
+  .annotations .key-value,
+  .labels .row,
+  .annotations .row,
+  .labels .key-value-row,
+  .annotations .key-value-row,
+  .labels .rc-button,
+  .annotations .rc-button,
+  .labels .rc-tag,
+  .annotations .rc-tag,
+  .labels .tag-data,
+  .annotations .tag-data {
+    width: auto !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+  }
+  .labels .tag-data,
+  .annotations .tag-data {
+    white-space: normal !important;
+    overflow: visible !important;
+    word-break: break-all !important;
+    overflow-wrap: anywhere !important;
+  }
+
   /* --- 13. Forms --------------------------------------------- */
   .form-row,
   .row-of-columns {
@@ -496,6 +717,21 @@ body.rs-nav-open #rs-backdrop {
   .col-third {
     width: 100% !important;
     max-width: 100% !important;
+  }
+
+  /* Rancher's "create/edit resource" form grid (.row > .col.span-N,
+     e.g. the Namespace / Name / Description row on PVC and
+     StorageClass detail pages) lays out ~50%-wide columns in a flex
+     row that doesn't fit at 378px. Wrap the row and stack each
+     column full width. */
+  .row {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  .row > .col {
+    flex: 1 1 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
   }
   input[type='text'],
   input[type='password'],
