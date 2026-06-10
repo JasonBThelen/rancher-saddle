@@ -45,6 +45,19 @@ assert_contains "tlsVerify defaults to proxy_ssl_verify off" "$out" "proxy_ssl_v
 out=$(helm template test "$CHART" --set upstream.url=https://rancher.example.com --set upstream.tlsVerify=true)
 assert_contains "tlsVerify=true renders proxy_ssl_verify on" "$out" "proxy_ssl_verify on;"
 
+# Test 4: overlay files (Docker) and chart files (Helm ConfigMap, via
+# .Files.Glob in configmap-overlay.yaml) must stay byte-identical
+for f in mobile.css mobile.js; do
+  if diff -q "overlay/$f" "$CHART/files/$f" > /dev/null 2>&1; then
+    echo "  PASS: overlay/$f matches $CHART/files/$f"
+    PASS=$((PASS + 1))
+  else
+    echo "  FAIL: overlay/$f and $CHART/files/$f have diverged"
+    echo "        run: cp overlay/$f $CHART/files/$f"
+    FAIL=$((FAIL + 1))
+  fi
+done
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ] || exit 1

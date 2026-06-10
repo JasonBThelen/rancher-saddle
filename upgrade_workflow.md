@@ -194,21 +194,23 @@ For each confirmed issue:
    layout that needs a new rule (see the
    [pitfall reference](#reference-known-css-pitfalls)).
 2. Edit `overlay/mobile.css` (or `overlay/mobile.js`).
-3. **Sync to the Helm copy and verify**:
+3. **Sync to the Helm copy**:
    ```bash
    cp overlay/mobile.css helm/rancher-saddle/files/mobile.css
-   diff overlay/mobile.css helm/rancher-saddle/files/mobile.css && echo "IN SYNC"
    # if mobile.js changed too:
    cp overlay/mobile.js helm/rancher-saddle/files/mobile.js
-   diff overlay/mobile.js helm/rancher-saddle/files/mobile.js && echo "IN SYNC"
    ```
-4. Format and lint:
+4. Format, lint, and verify the sync:
    ```bash
    npx prettier --write 'overlay/**/*.{js,css}'
    npm run lint
    npm run test:helm
    ```
-   (re-run the sync/diff check if prettier rewrote anything)
+   `test:helm` includes a byte-for-byte diff check between
+   `overlay/{mobile.css,mobile.js}` and
+   `helm/rancher-saddle/files/{mobile.css,mobile.js}` — it fails loudly
+   if you forget step 3 or if prettier rewrote one copy but not the
+   other (re-run step 3 and this command again in that case).
 5. Deploy to the test cluster:
    ```bash
    helm upgrade rancher-saddle ./helm/rancher-saddle -n cattle-system --reuse-values
