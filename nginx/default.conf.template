@@ -25,6 +25,7 @@ server {
         proxy_redirect ${RANCHER_URL} /;
         proxy_redirect default;
         proxy_cookie_domain $proxy_host $host;
+        proxy_cookie_flags ~ nosecure;
         proxy_ssl_verify off;       # Rancher commonly uses self-signed certs
         proxy_ssl_server_name on;   # Required for SNI with named vhosts
 

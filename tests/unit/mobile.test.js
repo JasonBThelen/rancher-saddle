@@ -16,7 +16,8 @@ beforeAll(() => {
   nav.className = 'side-nav';
   document.body.appendChild(nav);
 
-  eval(mobileJs);
+  const run = new Function('window', 'document', mobileJs);
+  run(window, document);
 });
 
 beforeEach(() => {

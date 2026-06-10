@@ -27,20 +27,29 @@ function readEnv(filePath) {
   return Object.fromEntries(
     readFileSync(filePath, 'utf8')
       .split(/\r?\n/)
-      .filter(l => l.includes('=') && !l.startsWith('#'))
-      .map(l => { const i = l.indexOf('='); return [l.slice(0, i).trim(), l.slice(i + 1).trim()]; })
+      .filter((l) => l.includes('=') && !l.startsWith('#'))
+      .map((l) => {
+        const i = l.indexOf('=');
+        return [l.slice(0, i).trim(), l.slice(i + 1).trim()];
+      }),
   );
 }
 
 const env = readEnv(join(__dir, '..', '.env'));
 
-const BASE = process.env.RANCHER_BASE ?? env.RANCHER_BASE ?? 'https://rancher-mobile.int.thelenlab.com';
+const BASE =
+  process.env.RANCHER_BASE ??
+  env.RANCHER_BASE ??
+  'https://rancher-mobile.int.thelenlab.com';
+const PROXY_BASE = process.env.PROXY_BASE ?? env.PROXY_BASE ?? null;
 const USER = process.env.RANCHER_USER ?? env.RANCHER_USER ?? 'admin';
 const PASS = process.env.RANCHER_PASS ?? env.password ?? env.RANCHER_PASS;
 const TARGET = process.argv[2] ?? '/dashboard/c/local/explorer/apps.deployment';
 
 if (!PASS) {
-  console.error('No password found — set RANCHER_PASS or add password=xxx to .env');
+  console.error(
+    'No password found — set RANCHER_PASS or add password=xxx to .env',
+  );
   process.exit(1);
 }
 
@@ -68,18 +77,31 @@ async function getRancherToken(base, user, pass) {
       },
       rejectUnauthorized: false,
     };
-    const req = https.request(options, res => {
+    const req = https.request(options, (res) => {
       let data = '';
-      res.on('data', chunk => { data += chunk; });
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
       res.on('end', () => {
-        console.log(`  API status: ${res.statusCode}, body length: ${data.length}`);
+        console.log(
+          `  API status: ${res.statusCode}, body length: ${data.length}`,
+        );
         if (res.statusCode >= 400) {
-          reject(new Error(`Auth failed ${res.statusCode}: ${data.slice(0, 200)}`));
+          reject(
+            new Error(`Auth failed ${res.statusCode}: ${data.slice(0, 200)}`),
+          );
           return;
         }
         let json = {};
-        try { json = JSON.parse(data); } catch { /* non-JSON body */ }
-        resolve({ token: json.token, cookies: res.headers['set-cookie'] ?? [] });
+        try {
+          json = JSON.parse(data);
+        } catch {
+          /* non-JSON body */
+        }
+        resolve({
+          token: json.token,
+          cookies: res.headers['set-cookie'] ?? [],
+        });
       });
     });
     req.on('error', reject);
@@ -95,14 +117,20 @@ console.log('\nAuthenticating via API …');
 let authResult;
 try {
   authResult = await getRancherToken(BASE, USER, PASS);
-  console.log('Token obtained:', authResult.token ? authResult.token.slice(0, 20) + '…' : '(cookie only)');
+  console.log(
+    'Token obtained:',
+    authResult.token ? authResult.token.slice(0, 20) + '…' : '(cookie only)',
+  );
 } catch (e) {
   console.error('API auth failed:', e.message);
   console.log('Falling back to form login …');
   authResult = null;
 }
 
-const browser = await chromium.launch({ ignoreHTTPSErrors: true });
+const browser = await chromium.launch({
+  ignoreHTTPSErrors: true,
+  args: ['--disable-web-security'],
+});
 const ctx = await browser.newContext({
   viewport: { width: 390, height: 844 },
   ignoreHTTPSErrors: true,
@@ -110,34 +138,41 @@ const ctx = await browser.newContext({
 
 // Inject cookies from API auth
 if (authResult?.cookies?.length) {
-  const domain = new URL(BASE).hostname;
+  const domain = new URL(PROXY_BASE ?? BASE).hostname;
   for (const raw of authResult.cookies) {
     const name = raw.split(';')[0].split('=')[0].trim();
     const value = raw.split(';')[0].split('=').slice(1).join('=').trim();
-    await ctx.addCookies([{ name, value, domain, path: '/' }]);
+    await ctx.addCookies([{ name, value, domain, path: '/', secure: false }]);
   }
   console.log('Cookies injected:', authResult.cookies.length);
 } else if (authResult?.token) {
   // Set as Authorization header via extra headers — won't work for SPA but set cookie instead
-  await ctx.addCookies([{
-    name: 'R_SESS',
-    value: authResult.token,
-    domain: new URL(BASE).hostname,
-    path: '/',
-  }]);
+  await ctx.addCookies([
+    {
+      name: 'R_SESS',
+      value: authResult.token,
+      domain: new URL(PROXY_BASE ?? BASE).hostname,
+      path: '/',
+      secure: false,
+    },
+  ]);
   console.log('R_SESS cookie set');
 }
 
 const page = await ctx.newPage();
 
 const consoleErrors = [];
-page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(msg.text()); });
-page.on('pageerror', err => consoleErrors.push(err.message));
+page.on('console', (msg) => {
+  if (msg.type() === 'error') consoleErrors.push(msg.text());
+});
+page.on('pageerror', (err) => consoleErrors.push(err.message));
 
 // If API auth didn't give us cookies, fall back to form login
 if (!authResult?.cookies?.length && !authResult?.token) {
   console.log('\nForm login …');
-  await page.goto(`${BASE}/dashboard/auth/login`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${PROXY_BASE ?? BASE}/dashboard/auth/login`, {
+    waitUntil: 'domcontentloaded',
+  });
   await page.waitForSelector('input[type="password"]', { timeout: 10000 });
   await page.locator('input[type="text"]').first().fill(USER);
   await page.locator('input[type="password"]').first().fill(PASS);
@@ -148,24 +183,35 @@ if (!authResult?.cookies?.length && !authResult?.token) {
 }
 
 // Navigate to target
-console.log(`\nNavigating to ${BASE}${TARGET} …`);
-await page.goto(`${BASE}${TARGET}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+console.log(`\nNavigating to ${PROXY_BASE ?? BASE}${TARGET} …`);
+await page.goto(`${PROXY_BASE ?? BASE}${TARGET}`, {
+  waitUntil: 'domcontentloaded',
+  timeout: 30000,
+});
 // Wait for the content to settle — Rancher SPA needs time after auth redirect
 await page.waitForTimeout(3000);
 await page.waitForLoadState('networkidle').catch(() => {});
 await page.waitForTimeout(1000);
 
-await page.screenshot({ path: `screenshots/${slug}_01_viewport.png`, fullPage: false });
-await page.screenshot({ path: `screenshots/${slug}_02_full.png`, fullPage: true });
+await page.screenshot({
+  path: `screenshots/${slug}_01_viewport.png`,
+  fullPage: false,
+});
+await page.screenshot({
+  path: `screenshots/${slug}_02_full.png`,
+  fullPage: true,
+});
 
 // Diagnostics
 const cssLoaded = await page.evaluate(() =>
-  [...document.querySelectorAll('link[rel="stylesheet"]')].some(l => l.href.includes('_saddle'))
+  [...document.querySelectorAll('link[rel="stylesheet"]')].some((l) =>
+    l.href.includes('_saddle'),
+  ),
 );
 console.log('\nSaddle CSS injected:', cssLoaded);
 
 const info = await page.evaluate(() => {
-  const q = s => {
+  const q = (s) => {
     const el = document.querySelector(s);
     if (!el) return null;
     const cs = getComputedStyle(el);
@@ -181,8 +227,12 @@ const info = await page.evaluate(() => {
       classList: [...el.classList].join(' '),
     };
   };
-  const lastTh = document.querySelector('.sortable-table thead tr th:last-child');
-  const lastTd = document.querySelector('.sortable-table tbody tr td:last-child');
+  const lastTh = document.querySelector(
+    '.sortable-table thead tr th:last-child',
+  );
+  const lastTd = document.querySelector(
+    '.sortable-table tbody tr td:last-child',
+  );
 
   // Walk up from .main-layout to find where width expands
   const chain = [];
@@ -201,9 +251,18 @@ const info = await page.evaluate(() => {
   }
 
   // Find the left nav element(s)
-  const navEls = [...document.querySelectorAll('[class*="nav"], [class*="sidebar"], [class*="side"]')]
-    .map(e => ({ tag: e.tagName, classes: [...e.classList].join(' '), offsetWidth: e.offsetWidth, offsetLeft: e.offsetLeft }))
-    .filter(e => e.offsetWidth > 0 && e.offsetWidth < 100);
+  const navEls = [
+    ...document.querySelectorAll(
+      '[class*="nav"], [class*="sidebar"], [class*="side"]',
+    ),
+  ]
+    .map((e) => ({
+      tag: e.tagName,
+      classes: [...e.classList].join(' '),
+      offsetWidth: e.offsetWidth,
+      offsetLeft: e.offsetLeft,
+    }))
+    .filter((e) => e.offsetWidth > 0 && e.offsetWidth < 100);
 
   return {
     currentURL: location.href,
@@ -230,18 +289,20 @@ const info = await page.evaluate(() => {
         headerGap: hcs.columnGap,
         headerPadding: `${hcs.paddingLeft} ${hcs.paddingRight}`,
         headerWidth: header.offsetWidth,
-        title: tcs ? {
-          offsetWidth: title.offsetWidth,
-          justifySelf: tcs.justifySelf,
-          alignSelf: tcs.alignSelf,
-          padding: `${tcs.paddingTop} ${tcs.paddingRight} ${tcs.paddingBottom} ${tcs.paddingLeft}`,
-          maxWidth: tcs.maxWidth,
-          flex: tcs.flex,
-          flexShrink: tcs.flexShrink,
-          flexGrow: tcs.flexGrow,
-          flexBasis: tcs.flexBasis,
-          width: tcs.width,
-        } : null,
+        title: tcs
+          ? {
+              offsetWidth: title.offsetWidth,
+              justifySelf: tcs.justifySelf,
+              alignSelf: tcs.alignSelf,
+              padding: `${tcs.paddingTop} ${tcs.paddingRight} ${tcs.paddingBottom} ${tcs.paddingLeft}`,
+              maxWidth: tcs.maxWidth,
+              flex: tcs.flex,
+              flexShrink: tcs.flexShrink,
+              flexGrow: tcs.flexGrow,
+              flexBasis: tcs.flexBasis,
+              width: tcs.width,
+            }
+          : null,
       };
     })(),
   };
@@ -252,7 +313,7 @@ console.log(JSON.stringify(info, null, 2));
 
 if (consoleErrors.length) {
   console.log('\nConsole errors (first 5):');
-  consoleErrors.slice(0, 5).forEach(e => console.log(' ', e));
+  consoleErrors.slice(0, 5).forEach((e) => console.log(' ', e));
 }
 
 await browser.close();

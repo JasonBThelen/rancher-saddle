@@ -9,7 +9,8 @@
     "test:helm": "bash tests/helm/template.test.sh",
     "test:watch": "vitest",
     "lint": "eslint overlay playwright helm/rancher-saddle/files",
-    "format": "prettier --write 'overlay/**/*.{js,css}' 'playwright/**/*.mjs'",
+    "format": "prettier --write \"overlay/**/*.{js,css}\" \"playwright/**/*.mjs\"",
+    "audit": "node playwright/audit.mjs /dashboard/c/local/explorer /dashboard/c/local/explorer/apps.deployment /dashboard/c/local/explorer/persistentvolumeclaim /dashboard/c/local/explorer/persistentvolumeclaim/create /dashboard/c/local/apps/charts",
     "prepare": "husky"
   },
   "devDependencies": {

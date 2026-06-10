@@ -29,6 +29,9 @@ npm run test:helm   # Helm template assertions
 
 # Visual verification after CSS/JS changes
 cd playwright && node screenshot.mjs [/optional/url/path]
+
+# Run automated mobile layout audit
+npm run audit
 ```
 
 ## Key Files
@@ -68,3 +71,8 @@ Work scoped to a subdirectory? Read the local `AGENTS.md`:
 - [`nginx/AGENTS.md`](nginx/AGENTS.md) — template syntax, critical headers, sync requirement
 - [`playwright/AGENTS.md`](playwright/AGENTS.md) — screenshot tool usage, env vars, .env format
 - [`helm/AGENTS.md`](helm/AGENTS.md) — chart structure, values, configmap relationship
+
+## Upgrades & Compatibility Workflow
+
+To verify and maintain compatibility when the upstream Rancher cluster is upgraded, see the detailed instructions in [upgrade_workflow.md](upgrade_workflow.md).
+

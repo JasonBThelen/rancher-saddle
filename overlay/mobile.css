@@ -311,6 +311,15 @@ body.rs-nav-open #rs-backdrop {
     flex-wrap: wrap !important;
     gap: 6px !important;
   }
+  .title-bar .actions {
+    display: flex !important;
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    gap: 8px !important;
+  }
+  .title-bar .actions .show-configuration {
+    flex: 1 1 auto !important;
+  }
 
   /* Resource list pages (e.g. Users & Authentication) use a different
      header: <header class="with-subheader"> is a CSS Grid with
