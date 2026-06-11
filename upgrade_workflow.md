@@ -21,8 +21,8 @@ screenshot → fix → redeploy), and it ends with a tagged release.
    `list-routes.mjs` (Step 2) to catch any new top-level pages.
 4. For every flagged page, screenshot it, diagnose against the [CSS
    pitfall reference](#reference-known-css-pitfalls), fix
-   `overlay/mobile.css`/`mobile.js`, sync to
-   `helm/rancher-saddle/files/`, redeploy, re-audit. Repeat until clean.
+   `helm/rancher-saddle/files/mobile.css`/`mobile.js`, redeploy, re-audit.
+   Repeat until clean.
 5. Run the full regression suite (Step 6).
 6. Cut a release (Step 7): bump the chart version, tag, push.
 7. Report the audited/fixed page list and the new release version back
@@ -60,7 +60,7 @@ Confirm the proxy itself is healthy *before* touching CSS — if these
 fail, the issue is nginx/Helm/JS plumbing, not a Rancher UI change:
 
 ```bash
-npm test            # unit + integration (integration needs Docker)
+npm test            # Vitest/jsdom — helm/rancher-saddle/files/mobile.js
 npm run test:helm   # Helm template assertions
 npm run lint
 ```
@@ -193,33 +193,22 @@ For each confirmed issue:
    live DOM and update the rule's selector. Otherwise it's usually a new
    layout that needs a new rule (see the
    [pitfall reference](#reference-known-css-pitfalls)).
-2. Edit `overlay/mobile.css` (or `overlay/mobile.js`).
-3. **Sync to the Helm copy**:
+2. Edit `helm/rancher-saddle/files/mobile.css` (or `mobile.js`).
+3. Format and lint:
    ```bash
-   cp overlay/mobile.css helm/rancher-saddle/files/mobile.css
-   # if mobile.js changed too:
-   cp overlay/mobile.js helm/rancher-saddle/files/mobile.js
-   ```
-4. Format, lint, and verify the sync:
-   ```bash
-   npx prettier --write 'overlay/**/*.{js,css}'
+   npx prettier --write 'helm/rancher-saddle/files/**/*.{js,css}'
    npm run lint
    npm run test:helm
    ```
-   `test:helm` includes a byte-for-byte diff check between
-   `overlay/{mobile.css,mobile.js}` and
-   `helm/rancher-saddle/files/{mobile.css,mobile.js}` — it fails loudly
-   if you forget step 3 or if prettier rewrote one copy but not the
-   other (re-run step 3 and this command again in that case).
-5. Deploy to the test cluster:
+4. Deploy to the test cluster:
    ```bash
    helm upgrade rancher-saddle ./helm/rancher-saddle -n cattle-system --reuse-values
    kubectl rollout status deployment/rancher-saddle -n cattle-system --timeout=60s
    ```
-6. Re-run `audit.mjs` (and `screenshot.mjs` for a visual check) on the
+5. Re-run `audit.mjs` (and `screenshot.mjs` for a visual check) on the
    affected route(s) to confirm the fix and check for regressions on
    nearby pages.
-7. Repeat until **all** routes in Step 3 are clean.
+6. Repeat until **all** routes in Step 3 are clean.
 
 ---
 
@@ -227,7 +216,7 @@ For each confirmed issue:
 
 ```bash
 npm run lint
-npm test            # unit + integration
+npm test
 npm run test:helm
 ```
 
@@ -246,8 +235,9 @@ and push it to `oci://ghcr.io/<owner>/charts/rancher-saddle`
    [`helm/rancher-saddle/Chart.yaml`](helm/rancher-saddle/Chart.yaml).
    Use a **patch** bump for CSS-only fixes, **minor** if new
    functionality/config was added.
-2. Commit the chart bump along with all `mobile.css`/`mobile.js`/test
-   changes from this workflow.
+2. Commit the chart bump along with all
+   `helm/rancher-saddle/files/{mobile.css,mobile.js}`/test changes from
+   this workflow.
 3. Tag and push:
    ```bash
    git tag vX.Y.Z

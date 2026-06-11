@@ -17,15 +17,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate nginx config
-        run: |
-          export RANCHER_URL=https://rancher.example.com
-          envsubst '${RANCHER_URL}' < nginx/default.conf.template > /tmp/default.conf
-          docker run --rm \
-            --add-host rancher.example.com:127.0.0.1 \
-            -v /tmp/default.conf:/etc/nginx/conf.d/default.conf:ro \
-            nginx:alpine nginx -t
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -41,14 +32,19 @@ jobs:
       - name: Run unit tests
         run: npm run test:unit
 
-      - name: Build Docker image for integration tests
-        run: docker build -t rancher-saddle-test .
-
-      - name: Run integration tests
-        run: npm run test:int
-
       - name: Install Helm
         uses: azure/setup-helm@v4
+
+      - name: Validate rendered nginx config
+        run: |
+          mkdir -p /tmp/conf.d
+          helm template test ./helm/rancher-saddle --set upstream.url=https://rancher.example.com \
+            --show-only templates/configmap.yaml \
+            | sed -n '/^  default.conf: |$/,$p' | tail -n +2 | sed 's/^    //' > /tmp/conf.d/default.conf
+          docker run --rm \
+            --add-host rancher.example.com:127.0.0.1 \
+            -v /tmp/conf.d:/etc/nginx/conf.d:ro \
+            nginx:alpine nginx -t
 
       - name: Run Helm template tests
         run: npm run test:helm

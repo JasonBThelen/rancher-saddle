@@ -1,3 +1,0 @@
-FROM nginx:alpine
-COPY upstream.html /usr/share/nginx/html/index.html
-COPY upstream-nginx.conf /etc/nginx/conf.d/default.conf

@@ -2,10 +2,7 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    include: ['tests/unit/**/*.test.js', 'tests/integration/**/*.test.js'],
-    environmentMatchGlobs: [
-      ['tests/unit/**', 'jsdom'],
-      ['tests/integration/**', 'node'],
-    ],
+    include: ['tests/unit/**/*.test.js'],
+    environment: 'jsdom',
   },
 });

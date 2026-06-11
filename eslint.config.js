@@ -2,7 +2,7 @@ import js from '@eslint/js';
 
 export default [
   {
-    files: ['overlay/**/*.js', 'helm/**/*.js', 'playwright/**/*.mjs'],
+    files: ['helm/**/*.js', 'playwright/**/*.mjs'],
     ...js.configs.recommended,
     languageOptions: {
       ecmaVersion: 2022,

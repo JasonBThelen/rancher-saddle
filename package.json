@@ -5,11 +5,10 @@
   "scripts": {
     "test": "vitest run",
     "test:unit": "vitest run tests/unit",
-    "test:int": "vitest run tests/integration",
     "test:helm": "bash tests/helm/template.test.sh",
     "test:watch": "vitest",
-    "lint": "eslint overlay playwright helm/rancher-saddle/files",
-    "format": "prettier --write \"overlay/**/*.{js,css}\" \"playwright/**/*.mjs\"",
+    "lint": "eslint playwright helm/rancher-saddle/files",
+    "format": "prettier --write \"helm/rancher-saddle/files/**/*.{js,css}\" \"playwright/**/*.mjs\"",
     "audit": "node playwright/audit.mjs /dashboard/c/local/explorer /dashboard/c/local/explorer/apps.deployment /dashboard/c/local/explorer/persistentvolumeclaim /dashboard/c/local/explorer/persistentvolumeclaim/create /dashboard/c/local/apps/charts",
     "prepare": "husky"
   },

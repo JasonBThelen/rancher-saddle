@@ -4,7 +4,10 @@ import { fileURLToPath } from 'url';
 import { beforeAll, beforeEach, expect, test } from 'vitest';
 
 const __dir = dirname(fileURLToPath(import.meta.url));
-const mobileJs = readFileSync(join(__dir, '../../overlay/mobile.js'), 'utf8');
+const mobileJs = readFileSync(
+  join(__dir, '../../helm/rancher-saddle/files/mobile.js'),
+  'utf8',
+);
 
 // Run the mobile.js IIFE once in this jsdom environment.
 // It attaches a MutationObserver to document.body and patches history.

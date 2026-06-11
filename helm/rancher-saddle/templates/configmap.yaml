@@ -15,12 +15,14 @@ data:
         listen 80;
         server_name _;
 
+        # Serve the overlay CSS and JS at a path that won't collide with Rancher
         location ^~ /_saddle/ {
             alias /usr/share/nginx/saddle/;
             expires 1h;
             add_header Cache-Control "public";
         }
 
+        # Proxy everything else to the upstream Rancher instance
         location / {
             proxy_pass {{ .Values.upstream.url | trimSuffix "/" }};
             proxy_redirect {{ .Values.upstream.url | trimSuffix "/" }} /;
@@ -28,25 +30,37 @@ data:
             proxy_cookie_domain $proxy_host $host;
             proxy_cookie_flags ~ nosecure;
             proxy_ssl_verify {{ if .Values.upstream.tlsVerify }}on{{ else }}off{{ end }};
-            proxy_ssl_server_name on;
+            proxy_ssl_server_name on;   # Required for SNI with named vhosts
 
             proxy_http_version 1.1;
             proxy_set_header Host             $proxy_host;
             proxy_set_header X-Real-IP        $remote_addr;
             proxy_set_header X-Forwarded-For  $proxy_add_x_forwarded_for;
+            # Always tell Rancher the connection is HTTPS — this proxy is the TLS endpoint.
+            # Sending "http" here causes Steve API to reject WebSocket subscribe requests.
             proxy_set_header X-Forwarded-Proto https;
 
+            # Rewrite Origin so Rancher's CSRF/origin check passes.
+            # The browser sends the proxy's origin but Rancher validates that
+            # Origin matches its own hostname. Do NOT set Referer — browsers
+            # omit it on WebSocket upgrades and an artificial value confuses
+            # Rancher's routing.
             proxy_set_header Origin {{ .Values.upstream.url | trimSuffix "/" }};
 
+            # WebSocket pass-through (kubectl shell, log streaming, /v3/subscribe)
             proxy_set_header Upgrade    $http_upgrade;
             proxy_set_header Connection $connection_upgrade;
             proxy_read_timeout 3600s;
 
+            # Disable upstream compression so sub_filter can operate on plain text
             proxy_set_header Accept-Encoding "";
             gunzip on;
 
+            # Strip Rancher's Content-Security-Policy so the injected /_saddle/
+            # resources (same origin) are not blocked by a nonce/hash-based policy
             proxy_hide_header Content-Security-Policy;
 
+            # Inject the mobile overlay into HTML responses (text/html is the default)
             sub_filter '</head>' '<link rel="stylesheet" href="/_saddle/mobile.css"><script src="/_saddle/mobile.js" defer></script></head>';
             sub_filter_once on;
         }

@@ -1,30 +1,26 @@
 # Rancher Saddle
 
-nginx reverse proxy that injects `mobile.css` + `mobile.js` into every Rancher HTML response, making the Rancher dashboard usable on phones. No backend code — pure nginx + static files + Helm chart.
+nginx reverse proxy that injects `mobile.css` + `mobile.js` into every Rancher HTML response, making the Rancher dashboard usable on phones. No backend code, no custom image — a Helm chart that runs stock `nginx:alpine` with the config and overlay mounted from ConfigMaps.
 
 ## Quick Commands
 
 ```bash
-# Build and run locally
-docker build -t rancher-saddle .
-docker run -p 8080:80 -e RANCHER_URL=https://rancher.example.com rancher-saddle
-
 # Deploy to Kubernetes
 helm install rancher-saddle ./helm/rancher-saddle --set upstream.url=https://rancher.example.com
 
-# Validate nginx config (same check CI runs)
-export RANCHER_URL=https://rancher.example.com
-envsubst '${RANCHER_URL}' < nginx/default.conf.template > /tmp/default.conf
-docker run --rm --add-host rancher.example.com:127.0.0.1 -v /tmp/default.conf:/etc/nginx/conf.d/default.conf:ro nginx:alpine nginx -t
+# Validate the rendered nginx config (same check CI runs)
+mkdir -p /tmp/conf.d
+helm template test ./helm/rancher-saddle --set upstream.url=https://rancher.example.com \
+  --show-only templates/configmap.yaml \
+  | sed -n '/^  default.conf: |$/,$p' | tail -n +2 | sed 's/^    //' > /tmp/conf.d/default.conf
+docker run --rm --add-host rancher.example.com:127.0.0.1 -v /tmp/conf.d:/etc/nginx/conf.d:ro nginx:alpine nginx -t
 
 # Lint / format
 npm run lint
 npm run format
 
 # Run tests
-npm test            # everything (unit + integration; integration needs Docker)
-npm run test:unit   # Vitest/jsdom — overlay/mobile.js
-npm run test:int    # docker compose — nginx injection behavior
+npm test            # Vitest/jsdom — helm/rancher-saddle/files/mobile.js
 npm run test:helm   # Helm template assertions
 
 # Visual verification after CSS/JS changes
@@ -38,41 +34,28 @@ npm run audit
 
 | File | Purpose |
 |------|---------|
-| `overlay/mobile.css` | Mobile CSS overrides |
-| `overlay/mobile.js` | Hamburger toggle injection |
-| `nginx/default.conf.template` | nginx proxy config (Docker — envsubst template) |
-| `helm/rancher-saddle/templates/configmap.yaml` | nginx config (Kubernetes — rendered directly) |
-| `Dockerfile` | nginx:alpine + overlay files |
-| `docker-entrypoint.sh` | Substitutes RANCHER_URL at container startup |
+| `helm/rancher-saddle/files/mobile.css` | Mobile CSS overrides — single source of truth |
+| `helm/rancher-saddle/files/mobile.js` | Hamburger toggle, header sync, tab→dropdown injection — single source of truth |
+| `helm/rancher-saddle/templates/configmap.yaml` | nginx config — single source of truth, rendered with `upstream.url` baked in |
+| `helm/rancher-saddle/templates/configmap-overlay.yaml` | Loads `files/mobile.css`/`mobile.js` into a ConfigMap |
+| `helm/rancher-saddle/templates/deployment.yaml` | Stock `nginx:alpine` Deployment, mounts both ConfigMaps |
 | `playwright/screenshot.mjs` | Visual verifier against a live Rancher instance |
-
-## Critical: Two Deployment Modes
-
-The nginx config lives in **two places that must stay in sync**:
-
-- **Docker**: `nginx/default.conf.template` — `${RANCHER_URL}` substituted at startup via `envsubst`
-- **Helm/K8s**: `helm/rancher-saddle/templates/configmap.yaml` — full rendered config in a ConfigMap; no envsubst at runtime
-
-**When modifying nginx config: update both files.**
-
-See [`nginx/AGENTS.md`](nginx/AGENTS.md) for the load-bearing header rules.
 
 ## Things to Avoid
 
-- **No trailing slash** on `RANCHER_URL` / `upstream.url` — nginx and entrypoint both break with one
-- **Do not remove** the Origin/Referer rewrite headers — they pass Rancher's CSRF check
-- **Do not remove** `proxy_hide_header Content-Security-Policy` — allows the injected scripts to run
+- **No trailing slash** on `upstream.url` — the rendered nginx config breaks with one
+- **Do not remove** the `proxy_set_header Origin ...` rewrite — it passes Rancher's CSRF/origin check. Do **not** add a Referer rewrite — browsers omit Referer on WebSocket upgrades and an artificial value confuses Rancher's routing
+- **Do not remove** `proxy_hide_header Content-Security-Policy` — allows the injected `/_saddle/` scripts to run
+- **Do not remove** `proxy_set_header X-Forwarded-Proto https` — Rancher's Steve API rejects WebSocket subscribe requests if this isn't `https`, regardless of the proxy's actual scheme
 
 ## Subdirectory Context
 
 Work scoped to a subdirectory? Read the local `AGENTS.md`:
 
-- [`overlay/AGENTS.md`](overlay/AGENTS.md) — CSS conventions, JS injection notes, verification workflow
-- [`nginx/AGENTS.md`](nginx/AGENTS.md) — template syntax, critical headers, sync requirement
-- [`playwright/AGENTS.md`](playwright/AGENTS.md) — screenshot tool usage, env vars, .env format
 - [`helm/AGENTS.md`](helm/AGENTS.md) — chart structure, values, configmap relationship
+- [`helm/rancher-saddle/files/AGENTS.md`](helm/rancher-saddle/files/AGENTS.md) — CSS conventions, JS injection notes, verification workflow
+- [`playwright/AGENTS.md`](playwright/AGENTS.md) — screenshot tool usage, env vars, .env format
 
 ## Upgrades & Compatibility Workflow
 
 To verify and maintain compatibility when the upstream Rancher cluster is upgraded, see the detailed instructions in [upgrade_workflow.md](upgrade_workflow.md).
-

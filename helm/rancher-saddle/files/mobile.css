@@ -191,22 +191,55 @@ body.rs-nav-open #rs-backdrop {
 
   /* --- 3b. Top toolbar right side (namespace filter + action icons)
      .rd-header-right holds .top (.ns-filter namespace dropdown,
-     ~280px) and .header-buttons (kubectl shell, edit-as-yaml, search,
-     docs, notifications, avatar — combined ~450px). As a flex item it
-     defaults to min-width:auto, so flexbox refuses to shrink it below
-     its ~760px content size. That overflows header.offsetWidth (390px)
-     and inflates document.documentElement.scrollWidth to ~860px, which
-     is also what makes mobile browsers zoom the whole page out to fit
-     — leaving the band of blank space below the viewport-height layout.
-     Fix: let it shrink to the available width and scroll internally so
-     nothing escapes the header box. */
-  .rd-header-right {
-    min-width: 0 !important;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
+     ~290px), .header-buttons (5 icon buttons, ~250px) and .center-self
+     (search/notifications/avatar, ~170px) — combined ~710px, far wider
+     than the 390px header. As a flex item it defaults to min-width:auto,
+     so flexbox refuses to shrink it below its content size, which
+     overflowed header.offsetWidth and forced a horizontal scrollbar
+     inside the header to reach the right-most icons.
+     Fix: let the toolbar header wrap and drop .rd-header-right onto its
+     own full-width row(s) below the logo/cluster name, wrapping its own
+     children too — trading header height for zero horizontal scrolling.
+     This header has no stable class in 2.14.x — it's the direct <header>
+     child of .dashboard-content's "header" grid row (same element
+     section 3's padding-left rule above already targets this way). */
+  header.main-header,
+  .dashboard-content > header {
+    flex-wrap: wrap !important;
+    height: auto !important;
+    /* This header is also a CSS Grid item (the "header" row of
+       .dashboard-content, fixed at --header-height/55px). Grid items
+       default to align-self:stretch, which forces the box to the
+       55px row regardless of height:auto — let it size to its
+       (now multi-row) content instead. syncHeaderHeight() in
+       mobile.js then reads the real height and grows the grid row
+       to match. */
+    align-self: start !important;
+    row-gap: 4px;
   }
-  .rd-header-right .top,
-  .rd-header-right .header-buttons {
+  .rd-header-right {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: visible !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+    height: auto !important;
+    gap: 6px !important;
+    padding: 4px 8px 8px !important;
+    box-sizing: border-box !important;
+  }
+  /* Namespace filter gets its own full-width row; the icon groups
+     wrap onto the row(s) after it. */
+  .rd-header-right .top {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .rd-header-right .header-buttons,
+  .rd-header-right .center-self {
     flex-shrink: 0 !important;
   }
 
@@ -806,6 +839,41 @@ body.rs-nav-open #rs-backdrop {
   .tab-item {
     flex-shrink: 0;
     white-space: nowrap;
+  }
+
+  /* --- 16b. Tab strip -> dropdown (JS-injected, mobile.js) ----
+     Resource detail pages (e.g. Deployment) commonly have 5-7
+     horizontal tabs (Pods/Metrics/Services/Ingresses/Conditions/
+     Recent Events/Related Resources) whose combined width is ~2x
+     the viewport, leaving most of them reachable only by scrolling
+     the tab strip sideways. mobile.js detects when a
+     .tabbed-container > ul.tabs.horizontal overflows and injects a
+     <select class="rs-tab-select"> in front of it that switches tabs
+     by clicking the corresponding original <a>. Once injected, the
+     container gets .rs-tabs-enhanced and the original strip is hidden.
+     Tab strips that already fit (few short tab names) are left alone. */
+  .rs-tab-select {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 0 8px;
+    padding: 8px 12px;
+    font-size: 14px;
+    border: 1px solid var(--input-border, #dcdee7);
+    border-radius: var(--popover-border-radius, 4px);
+    background-color: var(--input-bg, #fff);
+    color: var(--input-text, inherit);
+  }
+  /* visibility:hidden + collapsed height (not display:none) so
+     scrollWidth/clientWidth stay measurable — mobile.js re-checks
+     overflow on every DOM mutation and on resize. */
+  .tabbed-container.rs-tabs-enhanced > .tabs.horizontal {
+    visibility: hidden !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
   }
 
   /* --- 17. Dropdowns ----------------------------------------- */

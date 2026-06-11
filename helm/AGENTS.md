@@ -11,13 +11,14 @@ Contains the Helm chart for deploying Rancher Saddle to Kubernetes.
 | File | Purpose |
 |------|---------|
 | `values.yaml` | Default values — well-commented, read it before changing defaults |
-| `templates/configmap.yaml` | nginx config written directly (no envsubst at runtime) |
-| `templates/deployment.yaml` | Deployment with liveness/readiness probes on `/_saddle/mobile.css` |
+| `templates/configmap.yaml` | The nginx config — single source of truth, rendered with `upstream.url` baked in (no envsubst at runtime) |
+| `templates/configmap-overlay.yaml` | Loads `files/mobile.css`/`mobile.js` into a ConfigMap via `.Files.Glob` |
+| `files/` | The mobile CSS/JS overlay — see [`files/AGENTS.md`](files/AGENTS.md) |
+| `templates/deployment.yaml` | Stock `nginx:alpine` Deployment with liveness/readiness probes on `/_saddle/mobile.css` |
 | `templates/ingress.yaml` | Optional ingress (disabled by default) |
 
-## nginx Config Sync
-
-**`templates/configmap.yaml` must stay in sync with `nginx/default.conf.template`** (the Docker-mode config). They are the same nginx config in two forms — the template version uses `${RANCHER_URL}` as a placeholder; the ConfigMap version has the full URL rendered at deploy time via `--set upstream.url=...`.
+The Deployment runs the unmodified `nginx:alpine` image — nginx config and the mobile
+overlay are mounted entirely from these two ConfigMaps. There is no custom Docker image.
 
 ## Install
 

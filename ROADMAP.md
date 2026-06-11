@@ -19,18 +19,10 @@ Mobile browser → nginx (Rancher Saddle) → upstream Rancher instance
                injects mobile.css + mobile.js into HTML <head>
 ```
 
-`mobile.css` uses Rancher's CSS custom property architecture (`--nav-width`, `--header-height`) to collapse the sidebar at mobile breakpoints and position it as a slide-in overlay. `mobile.js` (~40 lines) injects the hamburger toggle button after Vue mounts.
+`mobile.css` uses Rancher's CSS custom property architecture (`--nav-width`, `--header-height`) to collapse the sidebar at mobile breakpoints and position it as a slide-in overlay. `mobile.js` injects the hamburger toggle button after Vue mounts.
 
 ## Deployment
 
-### Docker (quick test)
-```sh
-docker run -p 8080:80 \
-  -e RANCHER_URL=https://rancher.example.com \
-  ghcr.io/jasonbthelen/rancher-saddle:latest
-```
-
-### Helm (production)
 ```sh
 helm install rancher-saddle ./helm/rancher-saddle \
   --set upstream.url=https://rancher.example.com \
@@ -38,12 +30,14 @@ helm install rancher-saddle ./helm/rancher-saddle \
   --set ingress.host=rancher-mobile.example.com
 ```
 
+Runs stock `nginx:alpine` — no custom image. nginx config and the mobile overlay are
+mounted from ConfigMaps.
+
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `overlay/mobile.css` | Mobile CSS overrides (~150 lines) |
-| `overlay/mobile.js` | Hamburger toggle injection (~40 lines) |
-| `nginx/default.conf.template` | nginx proxy config (envsubst template) |
-| `Dockerfile` | nginx:alpine + overlay files |
+| `helm/rancher-saddle/files/mobile.css` | Mobile CSS overrides |
+| `helm/rancher-saddle/files/mobile.js` | Hamburger toggle injection |
+| `helm/rancher-saddle/templates/configmap.yaml` | nginx proxy config |
 | `helm/rancher-saddle/` | Helm chart for Kubernetes deployment |

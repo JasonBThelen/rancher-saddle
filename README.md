@@ -16,30 +16,20 @@ Mobile browser → nginx (Rancher Saddle) → upstream Rancher instance
                injects mobile.css + mobile.js into HTML <head>
 ```
 
-`mobile.css` uses Rancher's CSS custom property architecture (`--nav-width`, `--header-height`) to collapse the sidebar at mobile breakpoints and position it as a slide-in overlay. `mobile.js` (~40 lines) injects the hamburger toggle button after Vue mounts.
+`mobile.css` uses Rancher's CSS custom property architecture (`--nav-width`, `--header-height`) to collapse the sidebar at mobile breakpoints and position it as a slide-in overlay. `mobile.js` injects the hamburger toggle, keeps the layout grid in sync with the (now-wrapping) header height, and converts overflowing tab strips into dropdowns.
 
 ## Deployment
 
-### Docker (quick test)
+A Helm chart that runs the unmodified `nginx:alpine` image — there's no custom image to build or maintain. The nginx config and the mobile overlay files are mounted from ConfigMaps.
 
 ```sh
-docker run -p 8080:80 \
-  -e RANCHER_URL=https://rancher.example.com \
-  ghcr.io/jasonbthelen/rancher-saddle:latest
-```
-
-### Helm (production)
-
-```sh
+# From GHCR (released version)
 helm install rancher-saddle oci://ghcr.io/jasonbthelen/charts/rancher-saddle \
   --set upstream.url=https://rancher.example.com \
   --set ingress.enabled=true \
   --set ingress.host=rancher-mobile.example.com
-```
 
-Or from a local checkout:
-
-```sh
+# From a local checkout
 helm install rancher-saddle ./helm/rancher-saddle \
   --set upstream.url=https://rancher.example.com
 ```
@@ -48,32 +38,25 @@ helm install rancher-saddle ./helm/rancher-saddle \
 
 ### Prerequisites
 
-- Docker (for building/testing the image)
-- Node.js 20+ (for the visual verifier)
-- Helm 3 (for chart packaging)
+- Node.js 20+ (for tests and the visual verifier)
+- Helm 3 (for chart templating/packaging)
+- Docker (only used to run `nginx -t` against the rendered config — see below)
 
-### Build image locally
-
-```sh
-docker build -t rancher-saddle .
-docker run -p 8080:80 -e RANCHER_URL=https://your-rancher.example.com rancher-saddle
-```
-
-### Validate nginx config
+### Validate the rendered nginx config
 
 ```sh
-export RANCHER_URL=https://rancher.example.com
-envsubst '${RANCHER_URL}' < nginx/default.conf.template > /tmp/default.conf
-docker run --rm --add-host rancher.example.com:127.0.0.1 -v /tmp/default.conf:/etc/nginx/conf.d/default.conf:ro nginx:alpine nginx -t
+mkdir -p /tmp/conf.d
+helm template test ./helm/rancher-saddle --set upstream.url=https://rancher.example.com \
+  --show-only templates/configmap.yaml \
+  | sed -n '/^  default.conf: |$/,$p' | tail -n +2 | sed 's/^    //' > /tmp/conf.d/default.conf
+docker run --rm --add-host rancher.example.com:127.0.0.1 -v /tmp/conf.d:/etc/nginx/conf.d:ro nginx:alpine nginx -t
 ```
 
 ### Run tests
 
 ```sh
 npm install
-npm test            # everything (unit + integration; integration needs Docker)
-npm run test:unit   # Vitest/jsdom — overlay/mobile.js
-npm run test:int    # docker compose — nginx injection behavior
+npm test            # Vitest/jsdom — helm/rancher-saddle/files/mobile.js
 npm run test:helm   # Helm template assertions
 ```
 
@@ -100,8 +83,7 @@ npm run format
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `RANCHER_URL` | Yes (Docker) | Upstream Rancher URL, no trailing slash |
-| `upstream.url` | Yes (Helm) | Same value, set via `--set` |
+| `upstream.url` | Yes | Upstream Rancher URL, no trailing slash — set via `helm install --set upstream.url=...` |
 | `RANCHER_BASE` | No | Playwright verifier base URL (defaults to lab instance) |
 | `RANCHER_USER` | No | Playwright verifier username (defaults to `admin`) |
 | `RANCHER_PASS` | Yes (verifier) | Playwright verifier password |
@@ -110,10 +92,8 @@ npm run format
 
 | File | Purpose |
 |------|---------|
-| `overlay/mobile.css` | Mobile CSS overrides (~150 lines) |
-| `overlay/mobile.js` | Hamburger toggle injection (~40 lines) |
-| `nginx/default.conf.template` | nginx proxy config (Docker mode — envsubst template) |
-| `helm/rancher-saddle/templates/configmap.yaml` | nginx config (Helm/K8s mode — rendered directly) |
-| `Dockerfile` | nginx:alpine + overlay files |
-| `docker-entrypoint.sh` | Substitutes RANCHER_URL at container startup |
+| `helm/rancher-saddle/files/mobile.css` | Mobile CSS overrides |
+| `helm/rancher-saddle/files/mobile.js` | Hamburger toggle, header sync, tab→dropdown injection |
+| `helm/rancher-saddle/templates/configmap.yaml` | nginx proxy config, rendered with `upstream.url` baked in |
+| `helm/rancher-saddle/templates/configmap-overlay.yaml` | Loads `files/` into a ConfigMap |
 | `playwright/screenshot.mjs` | Visual verification tool |
