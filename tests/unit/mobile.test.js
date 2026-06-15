@@ -38,12 +38,6 @@ test('creates hamburger button with correct ARIA attributes', () => {
   expect(btn.getAttribute('aria-expanded')).toBe('false');
 });
 
-test('creates backdrop with aria-hidden', () => {
-  const backdrop = document.getElementById('rs-backdrop');
-  expect(backdrop).not.toBeNull();
-  expect(backdrop.getAttribute('aria-hidden')).toBe('true');
-});
-
 test('hamburger click opens nav and sets aria-expanded true', () => {
   const btn = document.getElementById('rs-hamburger');
   btn.click();
@@ -57,12 +51,6 @@ test('second hamburger click closes nav', () => {
   btn.click();
   expect(document.body.classList.contains('rs-nav-open')).toBe(false);
   expect(btn.getAttribute('aria-expanded')).toBe('false');
-});
-
-test('backdrop click closes nav', () => {
-  document.getElementById('rs-hamburger').click();
-  document.getElementById('rs-backdrop').click();
-  expect(document.body.classList.contains('rs-nav-open')).toBe(false);
 });
 
 test('history.pushState call closes nav', () => {

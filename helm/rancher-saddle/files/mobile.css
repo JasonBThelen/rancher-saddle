@@ -22,7 +22,7 @@
    ============================================================= */
 
 /* ---------------------------------------------------------------
-   ALWAYS-ON: Hamburger + backdrop (display toggled via media query)
+   ALWAYS-ON: Hamburger (display toggled via media query)
    --------------------------------------------------------------- */
 #rs-hamburger {
   display: none;
@@ -60,18 +60,6 @@ body.rs-nav-open #rs-hamburger span:nth-child(2) {
 }
 body.rs-nav-open #rs-hamburger span:nth-child(3) {
   transform: translateY(-7px) rotate(-45deg);
-}
-
-#rs-backdrop {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
-}
-body.rs-nav-open #rs-backdrop {
-  display: block;
-  left: 330px;
 }
 
 /* ===============================================================
@@ -152,6 +140,7 @@ body.rs-nav-open #rs-backdrop {
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     max-width: 35vw !important;
+    order: 1;
   }
 
   /* Rancher wordmark logo (rhino + "Rancher" text, intrinsic 209x45)
@@ -217,29 +206,46 @@ body.rs-nav-open #rs-backdrop {
     align-self: start !important;
     row-gap: 4px;
   }
+  /* .rd-header-right is just a layout wrapper around three independent
+     sections (.top namespace filter, .header-buttons action icons,
+     .center-self kebab/bell/avatar). Dissolve its box so those
+     sections become flex items of header.main-header directly and can
+     share rows with the logo/cluster-name + spacer above, instead of
+     always starting a new row as a group. */
   .rd-header-right {
-    flex: 1 1 100% !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-    overflow-x: visible !important;
-    flex-wrap: wrap !important;
-    justify-content: flex-end !important;
-    align-items: center !important;
-    height: auto !important;
-    gap: 6px !important;
-    padding: 4px 8px 8px !important;
-    box-sizing: border-box !important;
+    display: contents !important;
   }
-  /* Namespace filter gets its own full-width row; the icon groups
-     wrap onto the row(s) after it. */
-  .rd-header-right .top {
-    flex: 1 1 100% !important;
-    width: 100% !important;
-    max-width: 100% !important;
+  /* Row order (header.main-header sorts items by `order`, wrapping
+     when a row runs out of width):
+       1. cluster/product name  (order 1, set above)
+       2. spacer                (order 2 — flex-grow, fills row 1)
+       3. .center-self          (order 3 — kebab/bell/avatar, ~171px,
+                                  fits in the spacer's leftover space on
+                                  row 1)
+       4. .top                  (order 4 — namespace filter, flex-basis
+                                  100% forces its own row 2)
+       5. .header-buttons        (order 5 — action icons, wrap onto
+                                  row 3 since .top fills all of row 2)
+     Net effect: pages with no .top/.header-buttons (e.g. /dashboard/home)
+     collapse to a single row; resource-detail pages (.header-buttons,
+     no .top) go from 3 rows to 2; resource-list pages (.top +
+     .header-buttons) go from 4 rows to 3. */
+  header.main-header > .spacer,
+  .dashboard-content > header > .spacer {
+    order: 2;
   }
-  .rd-header-right .header-buttons,
   .rd-header-right .center-self {
+    order: 3;
+    flex-shrink: 0 !important;
+  }
+  .rd-header-right .top {
+    order: 4;
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .rd-header-right .header-buttons {
+    order: 5;
     flex-shrink: 0 !important;
   }
 
@@ -354,6 +360,20 @@ body.rs-nav-open #rs-backdrop {
     flex: 1 1 auto !important;
   }
 
+  /* The resource name inside the detail title (e.g. "knowledge-base-ocr"
+     in "CronJob: knowledge-base-ocr") sits in a nested
+     .resource-name/.masthead-resource-title span that Rancher styles
+     white-space:nowrap + overflow:hidden + text-overflow:ellipsis and
+     caps around ~199px, clipping the name to "knowledge-base-...". Let it
+     wrap so the full name is always visible. */
+  .title-bar .resource-name,
+  .masthead-resource-title {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    max-width: none !important;
+  }
+
   /* Resource list pages (e.g. Users & Authentication) use a different
      header: <header class="with-subheader"> is a CSS Grid with
      "title actions" / "sub-header sub-header" areas. The title column
@@ -456,12 +476,37 @@ body.rs-nav-open #rs-backdrop {
     -webkit-overflow-scrolling: touch;
   }
 
+  /* Cluster Dashboard tabs (Events, Alerts, Certificates, Cluster
+     Metrics) render their sortable-table directly inside
+     .tab-container with no .sortable-table-container/.table-wrapper
+     to catch the overflow. Without a scroll boundary here, the
+     table's width escapes into .main-layout and drags the WHOLE
+     page (gauges, title, etc.) into horizontal scroll along with
+     it. Make .tab-container itself the horizontal scroll boundary
+     so only the active tab's content scrolls. */
+  .tab-container {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
   /* Remove the fixed minimum widths */
   .sortable-table,
   .zebra-table,
   .fixed-header-table,
   table.table {
     min-width: 0 !important;
+  }
+
+  /* Drop Rancher's fixed per-column widths on mobile. A wide fixed column
+     (Projects/Namespaces "Description" = 300px, or the Pod container
+     "Image") otherwise starves the flexible Name column down to an
+     illegible — even zero — width, with names wrapping one character per
+     line. With auto widths the columns size to content and the table
+     scrolls inside its container when the total exceeds the viewport.
+     The sticky kebab column keeps its own width (set in §8 below). */
+  .sortable-table > thead > tr > th,
+  .sortable-table > tbody > tr > td {
+    width: auto !important;
   }
 
   /* Sticky actions (kebab) column — last th/td in each row */
@@ -498,6 +543,15 @@ body.rs-nav-open #rs-backdrop {
   .sortable-table th,
   .sortable-table td {
     padding: 6px 8px !important;
+  }
+
+  /* Node list rows render a taints/labels sub-row (tr.sub-row.taints)
+     that dumps every node label (plan.upgrade.cattle.io/...) across
+     several wrapped lines, tripling each row's height with low-signal
+     noise. Hide it in the list; taints and labels remain on the node
+     detail page. */
+  .sortable-table tbody tr.sub-row.taints {
+    display: none !important;
   }
   .column-headers,
   .table-header-container,
@@ -556,6 +610,16 @@ body.rs-nav-open #rs-backdrop {
     width: 100% !important;
     min-width: 0 !important;
     max-width: 100% !important;
+  }
+  /* The filter panel (Repository/Category/Status facets) is a desktop
+     left sidebar. Stacked on top of the cards it buries the actual
+     chart grid ~1.5 screens down. Show the cards (.right-section) first
+     and drop the facets below them, so charts are visible immediately. */
+  .wrapper > .right-section {
+    order: 0 !important;
+  }
+  .wrapper > .filter-panel {
+    order: 1 !important;
   }
   .app-chart-cards {
     grid-template-columns: 1fr !important;
@@ -951,11 +1015,15 @@ body.rs-nav-open #rs-backdrop {
     font-size: 0.85em !important;
   }
 
-  /* More aggressive header truncation */
+  /* More aggressive truncation of the TOP-TOOLBAR cluster/product name
+     only. Do NOT include a bare `header .title` here — it also matches
+     resource detail/create mastheads (h1.title inside <header>), clamping
+     real page titles to 25vw (~97px) and truncating "Pod: <name>",
+     "CronJob: <name>", "Deployment" to a few characters. Those titles are
+     meant to wrap (see section 5); leave them alone. */
   .cluster-name,
   .product-name,
-  .simple-title,
-  header .title {
+  .simple-title {
     max-width: 25vw !important;
   }
 

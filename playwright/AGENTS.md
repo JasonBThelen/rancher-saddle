@@ -12,6 +12,7 @@ instance to confirm CSS/JS changes look correct. Used heavily by
 | `screenshot.mjs` | Single-page screenshot + computed-style dump for a layout element |
 | `audit.mjs` | Batch overflow/overlap audit across multiple pages (`npm run audit`) |
 | `list-routes.mjs` | Crawl the dashboard nav and print internal `/dashboard/...` routes — use when Rancher's nav/resource-type slugs change between versions |
+| `verify.mjs` | Screenshot + overflow check using the WORKING-TREE `mobile.css`/`mobile.js` (intercepts `/_saddle/*`) instead of the deployed ConfigMap versions — verify local CSS/JS edits without a `helm upgrade` |
 
 ## Usage
 
@@ -21,6 +22,7 @@ node screenshot.mjs                                  # default path
 node screenshot.mjs /dashboard/c/local/explorer      # specific path
 node audit.mjs /dashboard/c/local/explorer /dashboard/c/local/explorer/apps.deployment
 node list-routes.mjs                                 # crawl default nav pages
+node verify.mjs /dashboard/c/local/explorer/event    # test local mobile.css/js edits live
 ```
 
 Viewport: 390×844 (iPhone 14 Pro). Output: `playwright/screenshots/<slug>_*.png` and (for `audit.mjs`) `playwright/audit-results.json`, both gitignored.

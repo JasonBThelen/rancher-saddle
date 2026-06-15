@@ -1,6 +1,6 @@
 /* Rancher Saddle — Mobile Nav Toggle
-   Injects a hamburger button and backdrop into the Rancher
-   dashboard after Vue has mounted the layout components. */
+   Injects a hamburger button into the Rancher dashboard after Vue has
+   mounted the layout components. */
 (function () {
   'use strict';
 
@@ -11,7 +11,6 @@
       document.querySelector('.side-nav') ||
       document.querySelector('.side-menu');
     var btn = document.getElementById('rs-hamburger');
-    var backdrop = document.getElementById('rs-backdrop');
 
     if (header && navReady) {
       if (!btn) {
@@ -23,23 +22,71 @@
         btn.innerHTML = '<span></span><span></span><span></span>';
         btn.addEventListener('click', toggleNav);
         document.body.appendChild(btn);
-
-        // Backdrop
-        backdrop = document.createElement('div');
-        backdrop.id = 'rs-backdrop';
-        backdrop.setAttribute('aria-hidden', 'true');
-        backdrop.addEventListener('click', closeNav);
-        document.body.appendChild(backdrop);
       }
     } else {
       // Remove elements if layout shifts (e.g. logged out)
       if (btn) btn.remove();
-      if (backdrop) backdrop.remove();
       document.body.classList.remove('rs-nav-open');
     }
 
     syncHeaderHeight();
     syncTabDropdowns();
+    syncEventColumns();
+  }
+
+  // The Events list (/explorer/event) renders ~10 columns — far wider
+  // than a phone — so the table scrolls horizontally inside its
+  // container. The columns that survive in the visible left portion
+  // (Type, Source, First Seen, Count) are the low-signal ones, while the
+  // columns that actually tell you what happened (Reason, Message) and to
+  // what (Name/object) sit off-screen to the right. Hide the low-signal
+  // columns so the meaningful ones are visible without scrolling.
+  //
+  // Implemented as an injected <style> with :nth-child rules (computed
+  // from the live header order) rather than per-row class toggling: CSS
+  // covers current + lazily-rendered rows automatically and causes no
+  // observer churn. Group/sub rows use a single colspan cell, so
+  // nth-child(N) for N>=4 simply doesn't match them.
+  var EVENT_HIDE_COLUMNS = ['Type', 'Source', 'First Seen', 'Count'];
+  function syncEventColumns() {
+    var styleEl = document.getElementById('rs-event-cols');
+    var onEventList = /\/explorer\/event$/.test(location.pathname);
+    if (!onEventList) {
+      if (styleEl) styleEl.remove();
+      return;
+    }
+    var table = document.querySelector('.sortable-table');
+    var heads = table ? table.querySelectorAll('thead > tr > th') : [];
+    if (!heads.length) {
+      if (styleEl) styleEl.remove();
+      return;
+    }
+    var sig = '';
+    var hideIdx = [];
+    for (var i = 0; i < heads.length; i++) {
+      var label = heads[i].textContent.replace(/\s+/g, ' ').trim();
+      sig += label + '|';
+      if (EVENT_HIDE_COLUMNS.indexOf(label) !== -1) hideIdx.push(i + 1);
+    }
+    if (styleEl && styleEl._rsSig === sig) return;
+    var css = hideIdx
+      .map(function (n) {
+        return (
+          '.sortable-table thead > tr > th:nth-child(' +
+          n +
+          '),.sortable-table tbody > tr > td:nth-child(' +
+          n +
+          '){display:none !important;}'
+        );
+      })
+      .join('');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'rs-event-cols';
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = css;
+    styleEl._rsSig = sig;
   }
 
   // The toolbar <header> (direct <header> child of .dashboard-content,
