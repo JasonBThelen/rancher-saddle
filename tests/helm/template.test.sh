@@ -48,11 +48,15 @@ assert_contains "tlsVerify=true renders proxy_ssl_verify on" "$out" "proxy_ssl_v
 # Test 4: PWA wiring
 out=$(helm template test "$CHART" --set upstream.url=https://rancher.example.com)
 assert_contains "manifest link injected"            "$out" 'rel="manifest" href="/_saddle/manifest.json"'
-assert_contains "apple-touch-icon injected"         "$out" 'href="/_saddle/icons/apple-touch-icon.png"'
+assert_contains "apple-touch-icon injected"         "$out" 'href="/_saddle/apple-touch-icon.png"'
 assert_contains "service worker scope header set"   "$out" 'add_header Service-Worker-Allowed "/";'
 assert_contains "overlay carries sw.js"             "$out" "sw.js: |"
 assert_contains "overlay carries manifest.json"     "$out" "manifest.json: |"
 assert_contains "png icons land in binaryData"      "$out" "icon-512.png:"
+# ConfigMap keys can't contain slashes, so icons are served flat at /_saddle/<file>,
+# NOT /_saddle/icons/<file>. A subdir reference would 404 and break the PWA icon.
+assert_contains     "manifest references flat icon path" "$out" '"src": "/_saddle/icon-192.png"'
+assert_not_contains "no /_saddle/icons/ subdir refs"     "$out" "/_saddle/icons/"
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

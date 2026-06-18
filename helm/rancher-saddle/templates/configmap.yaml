@@ -64,7 +64,7 @@ data:
             proxy_hide_header Content-Security-Policy;
 
             # Inject the mobile overlay + PWA tags into HTML responses (text/html is the default)
-            sub_filter '</head>' '<link rel="manifest" href="/_saddle/manifest.json"><meta name="theme-color" content="#2453ff"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Rancher"><link rel="apple-touch-icon" href="/_saddle/icons/apple-touch-icon.png"><link rel="stylesheet" href="/_saddle/mobile.css"><script src="/_saddle/mobile.js" defer></script></head>';
+            sub_filter '</head>' '<link rel="manifest" href="/_saddle/manifest.json"><meta name="theme-color" content="#2453ff"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Rancher"><link rel="apple-touch-icon" href="/_saddle/apple-touch-icon.png"><link rel="stylesheet" href="/_saddle/mobile.css"><script src="/_saddle/mobile.js" defer></script></head>';
             sub_filter_once on;
         }
     }
