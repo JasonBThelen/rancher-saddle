@@ -82,6 +82,15 @@ data:
 
             # Inject the mobile overlay + PWA tags into HTML responses (text/html is the default)
             sub_filter '</head>' '<link rel="manifest" href="/_saddle/manifest.json"><meta name="theme-color" content="#2453ff"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Rancher"><link rel="apple-touch-icon" href="/_saddle/apple-touch-icon.png"><link rel="stylesheet" href="/_saddle/mobile.css"><script src="/_saddle/mobile.js" defer></script></head>';
+            {{- if .Values.proxy.url }}
+            # Rewrite Rancher's server-url in API responses so the browser's JS
+            # makes same-origin requests through this proxy instead of directly
+            # to the upstream instance (prevents CORS errors on login).
+            sub_filter '{{ .Values.upstream.url | trimSuffix "/" }}' '{{ .Values.proxy.url | trimSuffix "/" }}';
+            sub_filter_types text/html application/json application/javascript;
+            sub_filter_once off;
+            {{- else }}
             sub_filter_once on;
+            {{- end }}
         }
     }
