@@ -13,6 +13,14 @@ upstream:
   # Most internal installs use self-signed certs, so this stays false.
   tlsVerify: false
 
+# The public URL of this proxy (e.g. https://mobile.rancher.example.com).
+# Must not have a trailing slash.
+# When set, nginx rewrites Rancher's server-url in API responses so the
+# browser's JS makes same-origin requests through the proxy instead of
+# directly to the upstream instance (prevents CORS errors on login).
+proxy:
+  url: ""
+
 service:
   type: ClusterIP
   port: 80
