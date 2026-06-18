@@ -57,6 +57,8 @@ assert_contains "png icons land in binaryData"      "$out" "icon-512.png:"
 # NOT /_saddle/icons/<file>. A subdir reference would 404 and break the PWA icon.
 assert_contains     "manifest references flat icon path" "$out" '"src": "/_saddle/icon-192.png"'
 assert_not_contains "no /_saddle/icons/ subdir refs"     "$out" "/_saddle/icons/"
+assert_contains     "manifest served no-cache"          "$out" "location = /_saddle/manifest.json"
+assert_contains     "sw.js served no-cache"             "$out" "location = /_saddle/sw.js"
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

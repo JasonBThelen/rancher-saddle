@@ -15,6 +15,23 @@ data:
         listen 80;
         server_name _;
 
+        # PWA control files must always revalidate, otherwise a new manifest or
+        # service worker stays stuck behind the 1h cache below and updates never
+        # land (a stale manifest pointing at old icon paths breaks the install).
+        location = /_saddle/manifest.json {
+            alias /usr/share/nginx/saddle/manifest.json;
+            add_header Cache-Control "no-cache";
+        }
+        location = /_saddle/sw.js {
+            alias /usr/share/nginx/saddle/sw.js;
+            add_header Cache-Control "no-cache";
+            add_header Service-Worker-Allowed "/";
+        }
+        location = /_saddle/offline.html {
+            alias /usr/share/nginx/saddle/offline.html;
+            add_header Cache-Control "no-cache";
+        }
+
         # Serve the overlay CSS and JS at a path that won't collide with Rancher
         location ^~ /_saddle/ {
             alias /usr/share/nginx/saddle/;
