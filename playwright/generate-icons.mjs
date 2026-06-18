@@ -7,29 +7,27 @@
 //
 //   node playwright/generate-icons.mjs
 //
-// Uses the chromium that already ships with the repo's playwright dependency,
-// so no extra tooling is required.
+// The icon is the Rancher steer mark (recolored white) centered on the brand
+// blue. The mark lives in `rancher-mark.svg` next to this script — it was
+// extracted from the logo the Rancher dashboard serves at
+// `/dashboard/img/rancher-logo.*.svg` (cow cropped out of the wordmark and
+// its #2453FF fill flipped to white). Uses the chromium that already ships
+// with the repo's playwright dependency, so no extra tooling is required.
 import { chromium } from 'playwright';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 
-const OUT_DIR = join(
-  dirname(fileURLToPath(import.meta.url)),
-  '..',
-  'helm',
-  'rancher-saddle',
-  'files',
-  'icons',
-);
+const __dir = dirname(fileURLToPath(import.meta.url));
+const OUT_DIR = join(__dir, '..', 'helm', 'rancher-saddle', 'files', 'icons');
+const MARK = readFileSync(join(__dir, 'rancher-mark.svg'), 'utf8');
 
 // One source design, rendered at a few sizes / masks.
 //  - rounded: transparent corners (Android "any" / browser tab icons)
 //  - full-bleed: edge-to-edge background so iOS / Android adaptive masks can
-//    crop it without exposing transparent corners; glyph kept in the safe zone.
-function html(size, { rounded, glyphScale }) {
+//    crop it without exposing transparent corners; mark kept in the safe zone.
+function html(size, { rounded, markWidth }) {
   const radius = rounded ? Math.round(size * 0.22) : 0;
-  const fontSize = Math.round(size * glyphScale);
   return `<!doctype html><meta charset="utf-8"><style>
     html,body{margin:0;padding:0}
     .icon{
@@ -37,19 +35,17 @@ function html(size, { rounded, glyphScale }) {
       border-radius:${radius}px;
       background:linear-gradient(150deg,#3a73ff 0%,#1c39b8 100%);
       display:flex;align-items:center;justify-content:center;
-      font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
-      font-weight:800;color:#fff;
-      font-size:${fontSize}px;line-height:1;
-      letter-spacing:-0.04em;
+      box-sizing:border-box;
     }
-  </style><div class="icon">R</div>`;
+    .icon svg{width:${Math.round(size * markWidth)}px;height:auto;display:block}
+  </style><div class="icon">${MARK}</div>`;
 }
 
 const targets = [
-  { file: 'icon-192.png', size: 192, rounded: true, glyphScale: 0.6 },
-  { file: 'icon-512.png', size: 512, rounded: true, glyphScale: 0.6 },
-  { file: 'icon-maskable-512.png', size: 512, rounded: false, glyphScale: 0.5 },
-  { file: 'apple-touch-icon.png', size: 180, rounded: false, glyphScale: 0.56 },
+  { file: 'icon-192.png', size: 192, rounded: true, markWidth: 0.66 },
+  { file: 'icon-512.png', size: 512, rounded: true, markWidth: 0.66 },
+  { file: 'icon-maskable-512.png', size: 512, rounded: false, markWidth: 0.56 },
+  { file: 'apple-touch-icon.png', size: 180, rounded: false, markWidth: 0.62 },
 ];
 
 mkdirSync(OUT_DIR, { recursive: true });
