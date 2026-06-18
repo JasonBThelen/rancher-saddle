@@ -255,4 +255,17 @@
   var observer = new MutationObserver(check);
   observer.observe(document.body, { childList: true, subtree: true });
   check();
+
+  // Register the PWA service worker so the dashboard can be installed to the
+  // home screen. The worker lives under /_saddle/ but claims the whole origin
+  // as its scope — nginx serves it with a `Service-Worker-Allowed: /` header,
+  // which is what permits the broadened scope. Failures are non-fatal: the
+  // dashboard works fine without it.
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker
+        .register('/_saddle/sw.js', { scope: '/' })
+        .catch(function () {});
+    });
+  }
 })();

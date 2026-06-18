@@ -26,6 +26,9 @@ npm run test:helm   # Helm template assertions
 # Visual verification after CSS/JS changes
 cd playwright && node screenshot.mjs [/optional/url/path]
 
+# Regenerate PWA icons (after editing the design in generate-icons.mjs)
+node playwright/generate-icons.mjs
+
 # Run automated mobile layout audit
 npm run audit
 ```
@@ -35,9 +38,10 @@ npm run audit
 | File | Purpose |
 |------|---------|
 | `helm/rancher-saddle/files/mobile.css` | Mobile CSS overrides — single source of truth |
-| `helm/rancher-saddle/files/mobile.js` | Hamburger toggle, header sync, tab→dropdown injection — single source of truth |
+| `helm/rancher-saddle/files/mobile.js` | Hamburger toggle, header sync, tab→dropdown injection, PWA service-worker registration — single source of truth |
+| `helm/rancher-saddle/files/manifest.json`, `sw.js`, `offline.html`, `icons/*.png` | PWA overlay — makes the dashboard installable to the home screen |
 | `helm/rancher-saddle/templates/configmap.yaml` | nginx config — single source of truth, rendered with `upstream.url` baked in |
-| `helm/rancher-saddle/templates/configmap-overlay.yaml` | Loads `files/mobile.css`/`mobile.js` into a ConfigMap |
+| `helm/rancher-saddle/templates/configmap-overlay.yaml` | Loads `files/*` (text) into ConfigMap `data:` and `files/icons/*.png` into `binaryData:` |
 | `helm/rancher-saddle/templates/deployment.yaml` | Stock `nginx:alpine` Deployment, mounts both ConfigMaps |
 | `playwright/screenshot.mjs` | Visual verifier against a live Rancher instance |
 
@@ -47,6 +51,8 @@ npm run audit
 - **Do not remove** the `proxy_set_header Origin ...` rewrite — it passes Rancher's CSRF/origin check. Do **not** add a Referer rewrite — browsers omit Referer on WebSocket upgrades and an artificial value confuses Rancher's routing
 - **Do not remove** `proxy_hide_header Content-Security-Policy` — allows the injected `/_saddle/` scripts to run
 - **Do not remove** `proxy_set_header X-Forwarded-Proto https` — Rancher's Steve API rejects WebSocket subscribe requests if this isn't `https`, regardless of the proxy's actual scheme
+- **Keep binary files (PNG icons) under `files/icons/`** — `configmap-overlay.yaml` loads `files/*` into the ConfigMap's UTF-8-only `data:` field; a binary there corrupts the ConfigMap. The `icons/` subdir is loaded separately into `binaryData:`.
+- **Do not remove** `add_header Service-Worker-Allowed "/"` from the `/_saddle/` location — without it the browser refuses `sw.js` the root scope and the PWA service worker can't control the dashboard
 
 ## Subdirectory Context
 

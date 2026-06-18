@@ -6,3 +6,10 @@ metadata:
     {{- include "rancher-saddle.labels" . | nindent 4 }}
 data:
 {{ (.Files.Glob "files/*").AsConfig | indent 2 }}
+{{- $icons := .Files.Glob "files/icons/*.png" }}
+{{- if $icons }}
+binaryData:
+  {{- range $path, $bytes := $icons }}
+  {{ base $path }}: {{ $.Files.Get $path | b64enc }}
+  {{- end }}
+{{- end }}

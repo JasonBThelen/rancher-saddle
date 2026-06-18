@@ -1,3 +1,7 @@
 # Force LF for files that run inside Linux containers
 *.sh        text eol=lf
 helm/**     text eol=lf
+
+# Binary assets must NOT be EOL-normalized (the helm/** rule above would
+# otherwise corrupt them). Last matching pattern wins, so this overrides it.
+*.png       binary

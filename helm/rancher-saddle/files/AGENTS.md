@@ -5,7 +5,11 @@ Contains the two files injected into every Rancher HTML response by nginx `sub_f
 ## Files
 
 - `mobile.css` — mobile breakpoint overrides
-- `mobile.js` — hamburger toggle, header-height sync, and tab→dropdown injection, run after Vue mounts
+- `mobile.js` — hamburger toggle, header-height sync, tab→dropdown injection, and PWA service-worker registration, run after Vue mounts
+- `manifest.json` — PWA web app manifest (name, icons, `display: standalone`, `start_url`)
+- `sw.js` — PWA service worker. Deliberately minimal: network-first for navigations with an offline fallback, and leaves all API/asset/WebSocket traffic untouched. Claims root scope via the `Service-Worker-Allowed: /` header set in `configmap.yaml`.
+- `offline.html` — fallback page shown by `sw.js` when the upstream is unreachable
+- `icons/*.png` — PWA / apple-touch icons. **Binary**, so they ride in the ConfigMap's `binaryData:` field, not `data:` — they live in the `icons/` subdir specifically so the `files/*` text glob in `configmap-overlay.yaml` skips them. Regenerate with `node playwright/generate-icons.mjs` after editing the design in that script.
 
 ## CSS Conventions
 
