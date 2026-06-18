@@ -29,6 +29,25 @@
       document.body.classList.remove('rs-nav-open');
     }
 
+    if (!document.querySelector('link[rel="manifest"]')) {
+      var manifest = document.createElement('link');
+      manifest.rel = 'manifest';
+      manifest.href = '/_saddle/manifest.json';
+      document.head.appendChild(manifest);
+    }
+    if (!document.querySelector('link[rel="apple-touch-icon"]')) {
+      var icon = document.createElement('link');
+      icon.rel = 'apple-touch-icon';
+      icon.href = '/_saddle/apple-touch-icon.png';
+      document.head.appendChild(icon);
+    }
+    if (!document.querySelector('meta[name="theme-color"]')) {
+      var theme = document.createElement('meta');
+      theme.name = 'theme-color';
+      theme.content = '#2453ff';
+      document.head.appendChild(theme);
+    }
+
     syncHeaderHeight();
     syncTabDropdowns();
     syncEventColumns();
@@ -109,28 +128,56 @@
     var actual = header.offsetHeight;
     if (!actual) return;
 
-    if (!content._rsBaseRows) {
-      var rows = getComputedStyle(content)
+    var oldVal = content.style.getPropertyValue('grid-template-rows');
+    var oldPri = content.style.getPropertyPriority('grid-template-rows');
+    var isOurOverride = oldPri === 'important';
+
+    if (!isOurOverride) {
+      content._rsBaseInline = oldVal;
+      var initialRows = getComputedStyle(content)
         .gridTemplateRows.split(' ')
         .map(parseFloat);
-      if (!rows.length || isNaN(rows[0])) return;
-      content._rsBaseRows = rows;
+      if (initialRows.length && !isNaN(initialRows[0])) {
+        content._rsBaseHeader = initialRows[0];
+      }
     }
 
-    var base = content._rsBaseRows;
-    var delta = actual - base[0];
-    var rows2 = base.slice();
-    rows2[0] = actual;
-    if (rows2.length > 1) {
-      rows2[1] = Math.max(0, rows2[1] - delta);
+    if (isOurOverride) {
+      if (content._rsBaseInline) {
+        content.style.setProperty('grid-template-rows', content._rsBaseInline);
+      } else {
+        content.style.removeProperty('grid-template-rows');
+      }
     }
+
+    var rowsStr = getComputedStyle(content).gridTemplateRows;
+    var rows = rowsStr.split(' ');
+
+    if (!rows.length || isNaN(parseFloat(rows[0]))) {
+      if (isOurOverride) {
+        content.style.setProperty('grid-template-rows', oldVal, 'important');
+      }
+      return;
+    }
+
+    var baseHeader =
+      content._rsBaseHeader !== undefined
+        ? content._rsBaseHeader
+        : parseFloat(rows[0]);
+    var delta = actual - baseHeader;
+    var rows2 = rows.slice();
+
+    rows2[0] = actual + 'px';
+    if (rows2.length > 1) {
+      var r1 = rows2[1];
+      if (r1.indexOf('px') !== -1) {
+        rows2[1] = Math.max(0, parseFloat(r1) - delta) + 'px';
+      }
+    }
+
     content.style.setProperty(
       'grid-template-rows',
-      rows2
-        .map(function (v) {
-          return v + 'px';
-        })
-        .join(' '),
+      rows2.join(' '),
       'important',
     );
 
