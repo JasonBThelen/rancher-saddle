@@ -274,11 +274,39 @@ body.rs-nav-open #rs-hamburger span:nth-child(3) {
     grid-column: 1 / -1 !important;
     min-width: 0 !important;
     overflow-x: auto !important;
+    /* Rancher's app shell (.dashboard-root is position:absolute and
+       body carries .overflow-hidden) confines ALL scrolling to
+       .main-layout — the document body never scrolls. Content that lands
+       at the very bottom of this fixed-height (viewport − header) scroll
+       region therefore sits flush against the viewport edge with no
+       overscroll/rubber-band to pull it clear, so the last rows of a
+       table or grid (e.g. the Pods tab on a Deployment detail page) get
+       clipped and a kebab menu opened there has nowhere to expand. Add a
+       tail of empty scrollable space so the final interactive element can
+       always be scrolled up off the bottom edge. Chromium includes the
+       end padding in the scroll range, so this genuinely extends how far
+       .main-layout can scroll. Short pages that already fit are
+       unaffected — the scroll region only engages once content exceeds
+       the viewport. */
+    padding-bottom: 15vh !important;
+    box-sizing: border-box;
   }
   .outlet {
     padding: 10px !important;
     min-width: 0 !important;
     box-sizing: border-box;
+  }
+
+  /* Rancher's .indented-panel adds a 20px left/right margin to inset
+     landing-page content (e.g. the cluster list on /dashboard/home) from
+     a wide desktop layout. On a phone that inset just steals ~13% of an
+     already narrow viewport, leaving the cluster table and its siblings
+     squeezed into the middle with dead space either side. Drop the
+     horizontal margin so this content uses the full width (the .outlet's
+     own padding still provides a small gutter). */
+  .indented-panel {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
   }
 
   /* Tabbed-container component (used for every tab strip in the
